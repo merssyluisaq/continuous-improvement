@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operating Characteristic Curve (OC) — Industrial Quality</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0; --surface: #ffffff; --text: #1a1a18; --text2: #5a5a54; --text3: #9a9a92;
+    --border: rgba(0,0,0,0.10); --orange: #D85A30; --orange-light: #FAECE7; --orange-mid: #F0997B;
+    --blue: #185FA5; --blue-light: #E6F1FB; --blue-mid: #85B7EB; --green: #0F6E56;
+    --green-light: #E1F5EE; --accent: #D85A30; --radius: 10px; --radius-lg: 16px;
+  }
+  body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--text); color: #fff; padding: 1.5rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .header-badge { background: var(--orange); color: #fff; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
+  header h1 { font-size: 18px; font-weight: 600; color: #fff; margin-top: 4px; }
+  header p { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+  .univ-tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.05em; }
+  main { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .intro-box { background: var(--text); color: #fff; border-radius: var(--radius-lg); padding: 1.5rem 1.75rem; margin: 1.5rem 0 1.25rem; }
+  .intro-box .ib-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--orange); margin-bottom: 8px; }
+  .intro-box h2 { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 10px; }
+  .intro-box p { font-size: 13.5px; color: rgba(255,255,255,0.78); line-height: 1.65; margin-bottom: 10px; }
+  .intro-box p:last-child { margin-bottom: 0; }
+  .intro-box strong { color: #fff; font-weight: 600; }
+  .intro-box .ib-real { background: rgba(255,255,255,0.07); border-left: 3px solid var(--orange); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: rgba(255,255,255,0.82); line-height: 1.6; margin-top: 12px; }
+  .concept-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 2rem; }
+  .concept-card { border-radius: var(--radius); padding: 16px 18px; border: 1px solid var(--border); }
+  .concept-card.alpha { background: var(--orange-light); border-color: var(--orange-mid); }
+  .concept-card.beta  { background: var(--blue-light);   border-color: var(--blue-mid); }
+  .concept-card .tag { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .concept-card.alpha .tag { color: var(--orange); }
+  .concept-card.beta  .tag { color: var(--blue); }
+  .concept-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .concept-card p  { font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .preset-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 2rem; }
+  .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+  .ctrl-c-wrap { display: flex; justify-content: center; margin-bottom: 1.5rem; }
+  .ctrl-c { width: calc(50% - 6px); }
+  .ctrl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .ctrl-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 10px; }
+  .ctrl-name { font-size: 12px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; }
+  .ctrl-input { font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 500; color: var(--text); width: 90px; text-align: right; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); }
+  .ctrl-input:focus { outline: none; border-color: var(--orange); }
+  .ctrl-unit { font-size: 13px; color: var(--text3); margin-left: 2px; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--border); border-radius: 2px; outline: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--text); border: 2px solid var(--bg); box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--text); border: 2px solid var(--bg); }
+  .lot-note { font-size: 11px; color: var(--text3); margin-top: 6px; line-height: 1.4; }
+
+  /* Risk mode toggle */
+  .mode-toggle { display: flex; gap: 0; margin-bottom: 1.5rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .mode-btn { flex: 1; padding: 12px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface); border: none; color: var(--text2); transition: all 0.15s; font-family: 'IBM Plex Sans', sans-serif; }
+  .mode-btn.active-alpha { background: var(--orange); color: #fff; }
+  .mode-btn.active-beta  { background: var(--blue); color: #fff; }
+  .mode-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .data-row { display: flex; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .data-card { flex: 1; min-width: 240px; display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); cursor: pointer; transition: all 0.15s; }
+  .data-card.on-alpha { border-color: var(--orange-mid); background: var(--orange-light); }
+  .data-card.on-beta  { border-color: var(--blue-mid); background: var(--blue-light); }
+  .data-card .dc-check { flex-shrink: 0; width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--text3); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; margin-top: 1px; }
+  .data-card.on-alpha .dc-check { background: var(--orange); border-color: var(--orange); }
+  .data-card.on-beta  .dc-check { background: var(--blue); border-color: var(--blue); }
+  .data-card .dc-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .data-card .dc-sub { font-size: 12px; color: var(--text2); line-height: 1.4; }
+  .ctrl-card.disabled { opacity: 0.4; pointer-events: none; }
+
+  /* Step-by-step panel */
+  .steps-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; }
+  .decision-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; }
+  .dec-input-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .dec-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .dec-sub { font-size: 12px; color: var(--text2); }
+  .dec-rule { font-family: 'IBM Plex Mono', monospace; font-size: 13px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin: 14px 0; color: var(--text2); }
+  .dec-rule strong { color: var(--text); }
+  .dec-result { border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; gap: 14px; }
+  .dec-result.accept { background: var(--green-light); border: 1px solid #8FD3BE; }
+  .dec-result.reject { background: #FBE3DE; border: 1px solid #E9A491; }
+  .dec-badge { font-size: 22px; font-weight: 600; padding: 6px 18px; border-radius: 8px; }
+  .dec-result.accept .dec-badge { background: var(--green); color: #fff; }
+  .dec-result.reject .dec-badge { background: #B23B17; color: #fff; }
+  .dec-text { font-size: 13px; line-height: 1.5; }
+  .dec-result.accept .dec-text { color: var(--green); }
+  .dec-result.reject .dec-text { color: #B23B17; }
+  .dec-text strong { font-weight: 600; }
+  /* Quiz */
+  .quiz-toggle { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:12px 18px; font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; color:var(--text2); cursor:pointer; display:flex; justify-content:space-between; align-items:center; margin-bottom:0; transition:all 0.15s; }
+  .quiz-toggle:hover { background:var(--bg); color:var(--text); }
+  .quiz-toggle .arrow { font-size:11px; transition:transform 0.2s; }
+  .quiz-toggle.open .arrow { transform:rotate(180deg); }
+  .quiz-panel { display:none; background:var(--surface); border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius) var(--radius); padding:1.25rem 1.5rem; }
+  .quiz-panel.open { display:block; }
+  .q-block { margin-bottom:1.25rem; padding-bottom:1.25rem; border-bottom:1px dashed var(--border); }
+  .q-block:last-child { margin-bottom:0; padding-bottom:0; border-bottom:none; }
+  .q-text { font-size:13px; font-weight:600; color:var(--text); margin-bottom:10px; }
+  .q-options { display:flex; flex-direction:column; gap:7px; }
+  .q-opt { display:flex; align-items:flex-start; gap:10px; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg); cursor:pointer; font-size:13px; color:var(--text2); transition:all 0.15s; }
+  .q-opt:hover { border-color:var(--text3); color:var(--text); }
+  .q-opt.correct  { background:var(--green-light); border-color:#8FD3BE; color:var(--green); font-weight:600; pointer-events:none; }
+  .q-opt.wrong    { background:#FBE3DE; border-color:#E9A491; color:#B23B17; pointer-events:none; }
+  .q-opt.disabled { opacity:0.45; pointer-events:none; }
+  .q-explain { font-size:12px; margin-top:8px; padding:8px 12px; border-radius:6px; background:var(--bg); border-left:3px solid var(--green); color:var(--text2); display:none; }
+  .q-explain.show { display:block; }
+  .step { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px dashed var(--border); }
+  .step:last-child { border-bottom: none; padding-bottom: 0; }
+  .step:first-child { padding-top: 0; }
+  .step-num { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--text); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+  .step.alpha .step-num { background: var(--orange); }
+  .step.beta  .step-num { background: var(--blue); }
+  .step-body { flex: 1; }
+  .step-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .step-formula { font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: var(--bg); border-radius: 8px; padding: 10px 14px; margin: 8px 0; color: var(--text); line-height: 1.7; border: 1px solid var(--border); overflow-x: auto; }
+  .step-formula .hl-orange { color: var(--orange); font-weight: 500; }
+  .step-formula .hl-blue   { color: var(--blue); font-weight: 500; }
+  .step-formula .hl-green  { color: var(--green); font-weight: 500; }
+  .step-explain { font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .result-banner { border-radius: var(--radius); padding: 16px 20px; margin-top: 4px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .result-banner.alpha { background: var(--orange-light); border: 1px solid var(--orange-mid); }
+  .result-banner.beta  { background: var(--blue-light);   border: 1px solid var(--blue-mid); }
+  .result-label { font-size: 13px; font-weight: 600; }
+  .result-banner.alpha .result-label { color: var(--orange); }
+  .result-banner.beta  .result-label { color: var(--blue); }
+  .result-value { font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 500; }
+  .result-banner.alpha .result-value { color: var(--orange); }
+  .result-banner.beta  .result-value { color: var(--blue); }
+  .rstatus { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; margin-top: 4px; }
+  .status-ok   { background: var(--green-light); color: var(--green); }
+  .status-warn { background: #FFF3CD; color: #856404; }
+  .status-high { background: #FBE3DE; color: #B23B17; }
+  .level-explain { font-size: 13px; line-height: 1.55; margin-top: 12px; padding: 12px 14px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); color: var(--text2); }
+  .level-explain strong { color: var(--text); font-weight: 600; }
+  .level-scale { display: flex; gap: 6px; margin: 10px 0 6px; flex-wrap: wrap; }
+  .level-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 4px; opacity: 0.45; }
+  .level-tag.on { opacity: 1; }
+  .lt-ok { background: var(--green-light); color: var(--green); }
+  .lt-mid { background: #FFF3CD; color: #856404; }
+  .lt-high { background: #FBE3DE; color: #B23B17; }
+
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; }
+  .chart-wrap { position: relative; width: 100%; height: 340px; }
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; font-size: 12px; color: var(--text2); margin-top: 12px; }
+  .leg-item { display: flex; align-items: center; gap: 6px; }
+  .leg-dot { width: 12px; height: 4px; border-radius: 2px; }
+  .calc-note { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 1.5rem; }
+  .calc-note .cn-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue); margin-bottom: 6px; }
+  .calc-note p { font-size: 13px; color: var(--text2); line-height: 1.6; margin: 0; }
+  .calc-note code { font-family: 'IBM Plex Mono', monospace; background: var(--blue-light); padding: 1px 6px; border-radius: 4px; }
+  .summary-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+  .summary-box .sb-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+  .sb-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .sb-chip { display: flex; flex-direction: column; gap: 2px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; min-width: 88px; }
+  .sb-chip .ck { font-size: 11px; color: var(--text3); font-weight: 600; }
+  .sb-chip .cv { font-family: 'IBM Plex Mono', monospace; font-size: 17px; font-weight: 500; color: var(--text); }
+  .sb-chip.alpha { border-color: var(--orange-mid); background: var(--orange-light); }
+  .sb-chip.alpha .ck, .sb-chip.alpha .cv { color: var(--orange); }
+  .sb-chip.beta { border-color: var(--blue-mid); background: var(--blue-light); }
+  .sb-chip.beta .ck, .sb-chip.beta .cv { color: var(--blue); }
+  .sb-interp { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .sb-interp strong { color: var(--text); font-weight: 600; }
+  footer { text-align: center; font-size: 12px; color: var(--text3); padding: 1.5rem; border-top: 1px solid var(--border); margin-top: 1rem; }
+  @media (max-width: 600px) {
+    .concept-row, .controls-grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 15px; }
+    .result-value { font-size: 24px; }
+  }
+
+  /* ── Tabs ── */
+  .tab-bar { background: var(--text); display: flex; gap: 0; border-top: 1px solid rgba(255,255,255,0.08); }
+  .tab-btn { flex: 1; padding: 13px 20px; font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600;
+    background: transparent; border: none; color: rgba(255,255,255,0.45); cursor: pointer; transition: all 0.15s;
+    border-bottom: 3px solid transparent; }
+  .tab-btn:hover { color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.04); }
+  .tab-btn.active { color: #fff; border-bottom-color: var(--orange); background: rgba(255,255,255,0.05); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Find the Plan styles ── */
+  #panel-find { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .find-mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 2rem; }
+  .find-mode-card { border-radius: var(--radius-lg); border: 2px solid var(--border); padding: 1.25rem 1.5rem;
+    cursor: pointer; transition: all 0.15s; background: var(--surface); }
+  .find-mode-card:hover { border-color: var(--text3); }
+  .find-mode-card.active-auto  { border-color: var(--orange); background: var(--orange-light); }
+  .find-mode-card.active-manual { border-color: var(--blue); background: var(--blue-light); }
+  .fmc-icon { font-size: 28px; margin-bottom: 8px; }
+  .fmc-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .find-mode-card.active-auto  .fmc-title { color: var(--orange); }
+  .find-mode-card.active-manual .fmc-title { color: var(--blue); }
+  .fmc-sub { font-size: 12px; color: var(--text2); line-height: 1.4; }
+
+  /* Auto mode */
+  .auto-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+  .find-btn { width: 100%; padding: 13px; background: var(--text); color: #fff; border: none;
+    border-radius: var(--radius); font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:600;
+    cursor: pointer; transition: background 0.15s; margin-bottom: 1.5rem; }
+  .find-btn:hover { background: var(--orange); }
+  .results-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size:13px; }
+  .results-table th { background: var(--text); color: #fff; padding: 10px 14px; text-align:left; font-weight:600; font-size:12px; letter-spacing:0.05em; }
+  .results-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .results-table tr:nth-child(even) td { background: var(--bg); }
+  .results-table tr:hover td { background: var(--blue-light); cursor: pointer; }
+  .results-table .badge { font-size:11px; font-weight:600; padding:2px 8px; border-radius:4px; }
+  .badge-ok   { background: var(--green-light); color: var(--green); }
+  .badge-warn { background: #FFF3CD; color: #856404; }
+  .badge-high { background: #FBE3DE; color: #B23B17; }
+  .no-plan-msg { text-align:center; padding:2rem; font-size:13px; color:var(--text2); background:var(--bg); border-radius:var(--radius); }
+  .try-btn { font-size:12px; font-weight:600; padding:4px 12px; border-radius:6px; background:var(--orange);
+    color:#fff; border:none; cursor:pointer; }
+
+  /* Manual mode */
+  .manual-targets { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+  .target-card { border-radius: var(--radius); padding: 14px 16px; border: 1px solid var(--border); background: var(--surface); }
+  .target-card .tc-label { font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text3); margin-bottom:4px; }
+  .target-card .tc-val { font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:500; color:var(--text); }
+  .target-card .tc-sub { font-size:12px; color:var(--text2); margin-top:2px; }
+  .manual-sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+  .live-risks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.5rem; }
+  .live-card { border-radius: var(--radius); padding: 16px 18px; border: 1px solid var(--border); background: var(--surface); }
+  .live-card .lc-label { font-size:11px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px; }
+  .live-card.lc-alpha .lc-label { color: var(--orange); }
+  .live-card.lc-beta  .lc-label { color: var(--blue); }
+  .live-card .lc-val { font-family:'IBM Plex Mono',monospace; font-size:28px; font-weight:500; line-height:1.1; }
+  .live-card.lc-alpha .lc-val { color: var(--orange); }
+  .live-card.lc-beta  .lc-val { color: var(--blue); }
+  .lc-bar-wrap { background: var(--bg); border-radius:4px; height:6px; margin:8px 0 4px; overflow:hidden; }
+  .lc-bar { height:100%; border-radius:4px; transition: width 0.3s, background 0.3s; }
+  .lc-bar.ok   { background: var(--green); }
+  .lc-bar.warn { background: #E9A800; }
+  .lc-bar.high { background: #B23B17; }
+  .lc-status { font-size:12px; font-weight:600; }
+  .lc-card.lc-alpha .lc-status.ok   { color: var(--green); }
+  .lc-card.lc-alpha .lc-status.warn { color: #856404; }
+  .lc-card.lc-alpha .lc-status.high { color: #B23B17; }
+  .lc-card.lc-beta  .lc-status.ok   { color: var(--green); }
+  .lc-card.lc-beta  .lc-status.warn { color: #856404; }
+  .lc-card.lc-beta  .lc-status.high { color: #B23B17; }
+  .success-banner { background: var(--green); color: #fff; border-radius: var(--radius-lg);
+    padding: 1.5rem 2rem; text-align:center; margin-bottom:1.5rem; display:none; }
+  .success-banner h3 { font-size:20px; font-weight:600; margin-bottom:6px; }
+  .success-banner p { font-size:13px; opacity:0.85; }
+  .find-chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.5rem; margin-bottom:1.5rem; }
+  .find-chart-wrap { position:relative; width:100%; height:300px; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <span class="header-badge">Unit 9</span>
+      <span style="font-size:13px;color:rgba(255,255,255,0.5);">Quality</span>
+    </div>
+    <h1>Operating Characteristic Curve (OC Curve)</h1>
+    <p>Interactive tool — Producer's Risk and Consumer's Risk</p>
+    <p style="margin-top:4px;">Professor: Merssy Luisa Quispe Velásquez</p>
+  </div>
+  <div class="univ-tag">UNIVERSIDAD DE LIMA</div>
+</header>
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-btn-analysis" onclick="switchTab('analysis')">📈 OC Curve Analysis</button>
+  <button class="tab-btn"        id="tab-btn-find"     onclick="switchTab('find')">🎯 Find the Plan</button>
+</div>
+
+
+<main id="panel-analysis" class="tab-panel active">
+
+  <div class="intro-box">
+    <div class="ib-tag">What is the OC Curve?</div>
+    <h2>The Operating Characteristic Curve</h2>
+    <p>For a sampling plan (sample size <strong>n</strong>, acceptance number <strong>c</strong>), the OC curve shows the <strong>probability of accepting a lot</strong> (Pa) against its <strong>true % of defectives</strong> (p). Its shape reveals how well the plan separates good lots from bad ones — and the two risks it carries: rejecting good lots (<strong>α</strong>) and accepting bad ones (<strong>β</strong>).</p>
+    <div class="ib-real"><strong>Real-life use:</strong> Before signing an inspection deal, supplier and buyer use the OC curve to check the plan is fair to both. Example: a factory inspects 60 of every 1,000 mufflers and accepts the lot if ≤ 1 is defective — the curve shows how often good lots get returned and bad ones slip through.</div>
+  </div>
+
+  <div class="section-label">The two risks every sampling plan carries</div>
+  <div class="concept-row">
+    <div class="concept-card alpha">
+      <div class="tag">Alpha (α) Risk — Producer / Seller</div>
+      <h3>Rejecting a good lot</h3>
+      <p>The lot meets the AQL (Acceptable Quality Level — the maximum % of defectives the buyer is willing to accept as "good"), but sampling rejects it. The supplier bears the consequences: returns, delays, and loss of trust.</p>
+    </div>
+    <div class="concept-card beta">
+      <div class="tag">Beta (β) Risk — Consumer / Buyer</div>
+      <h3>Accepting a bad lot</h3>
+      <p>The lot has intolerable quality (LTPD — Lot Tolerance Percent Defective, the % of defectives the buyer considers unacceptable), but sampling approves it. The buyer receives defective products, risking failures and customer complaints.</p>
+    </div>
+  </div>
+
+  <div class="section-label">What data does the problem give you?</div>
+  <div class="data-row">
+    <div class="data-card on-alpha" id="data-alpha" onclick="toggleData('alpha')">
+      <div class="dc-check">✓</div>
+      <div>
+        <div class="dc-title">AQL is given → compute α (Producer's Risk)</div>
+        <div class="dc-sub">Tick this when the problem provides the Acceptable Quality Level.</div>
+      </div>
+    </div>
+    <div class="data-card on-beta" id="data-beta" onclick="toggleData('beta')">
+      <div class="dc-check">✓</div>
+      <div>
+        <div class="dc-title">LTPD is given → compute β (Consumer's Risk)</div>
+        <div class="dc-sub">Tick this when the problem provides the Lot Tolerance Percent Defective.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">Sampling plan parameters</div>
+  <div class="controls-grid">
+    <div class="ctrl-card">
+      <div class="ctrl-top">
+        <span class="ctrl-name" style="text-transform:none;">Lot size (N)</span>
+        <span><input type="number" class="ctrl-input" id="in-N" min="1" step="1" value="1000"></span>
+      </div>
+      <div class="lot-note">The total lot from which the sample is drawn. Used for context; the Poisson approximation does not require it directly.</div>
+    </div>
+    <div class="ctrl-card">
+      <div class="ctrl-top">
+        <span class="ctrl-name" style="text-transform:none;">Sample size (n)</span>
+        <span><input type="number" class="ctrl-input" id="in-n" min="1" step="1" value="60"></span>
+      </div>
+      <input type="range" id="sl-n" min="1" max="5000" step="1" value="60" oninput="syncFromSlider('n')">
+    </div>
+  </div>
+
+  <div class="ctrl-c-wrap">
+    <div class="ctrl-card ctrl-c">
+      <div class="ctrl-top">
+        <span class="ctrl-name">Acceptance number (c)</span>
+        <span><input type="number" class="ctrl-input" id="in-c" min="0" step="1" value="1"></span>
+      </div>
+      <input type="range" id="sl-c" min="0" max="20" step="1" value="1" oninput="syncFromSlider('c')">
+    </div>
+  </div>
+
+  <div class="controls-grid">
+    <div class="ctrl-card" id="card-aql">
+      <div class="ctrl-top">
+        <span class="ctrl-name">AQL (%) — for α</span>
+        <span><input type="number" class="ctrl-input" id="in-aql" min="0.01" step="0.1" value="1"><span class="ctrl-unit">%</span></span>
+      </div>
+      <input type="range" id="sl-aql" min="0.1" max="10" step="0.1" value="1" oninput="syncFromSlider('aql')">
+    </div>
+    <div class="ctrl-card" id="card-ltpd">
+      <div class="ctrl-top">
+        <span class="ctrl-name">LTPD (%) — for β</span>
+        <span><input type="number" class="ctrl-input" id="in-ltpd" min="0.1" step="0.5" value="6"><span class="ctrl-unit">%</span></span>
+      </div>
+      <input type="range" id="sl-ltpd" min="1" max="30" step="0.5" value="6" oninput="syncFromSlider('ltpd')">
+    </div>
+  </div>
+
+  <div class="section-label">Step-by-step calculation</div>
+  <div class="mode-toggle">
+    <button class="mode-btn active-alpha" id="mode-alpha" onclick="setMode('alpha')">Calculate α — Producer's Risk (at AQL)</button>
+    <button class="mode-btn" id="mode-beta" onclick="setMode('beta')">Calculate β — Consumer's Risk (at LTPD)</button>
+  </div>
+
+  <div class="steps-panel" id="steps-panel"></div>
+
+  <div class="section-label">OC Curve</div>
+  <div class="chart-card">
+    <div class="chart-wrap">
+      <canvas id="ocChart" role="img" aria-label="Operating Characteristic Curve showing probability of acceptance vs percentage of defectives">OC curve with producer and consumer risk zones.</canvas>
+    </div>
+    <div class="legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#378ADD;height:3px;"></div>OC Curve</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#D85A30;"></div>AQL point (Producer's Risk α)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#1D9E75;"></div>LTPD point (Consumer's Risk β)</div>
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <div class="sb-label">Plan summary &amp; interpretation</div>
+    <div class="sb-chips" id="sb-chips"></div>
+    <div class="sb-interp" id="sb-interp"></div>
+  </div>
+
+  <div class="section-label">Lot acceptance decision</div>
+  <div class="decision-card">
+    <div class="dec-input-row">
+      <div>
+        <div class="dec-label">Number of defectives found in the sample (d)</div>
+        <div class="dec-sub">A whole-number count — after inspecting the n units, how many were defective.</div>
+      </div>
+      <input type="number" class="ctrl-input" id="in-d" min="0" step="1" value="0">
+    </div>
+    <div class="dec-rule" id="dec-rule"></div>
+    <div class="dec-result" id="dec-result"></div>
+  </div>
+
+  <button class="quiz-toggle" id="quiz-toggle" onclick="toggleQuiz()">
+    ✏️ Test your understanding — optional
+    <span class="arrow">▼</span>
+  </button>
+  <div class="quiz-panel" id="quiz-panel">
+
+    <div class="q-block" id="q1">
+      <div class="q-text">1. If you increase the sample size n (keeping c the same), what happens to the producer's risk α?</div>
+      <div class="q-options">
+        <div class="q-opt" onclick="answer('q1',this,false)">a) It increases — a larger sample finds more defects and rejects more lots</div>
+        <div class="q-opt" onclick="answer('q1',this,true)">b) It decreases — the curve becomes steeper and better separates good from bad lots</div>
+        <div class="q-opt" onclick="answer('q1',this,false)">c) It stays the same — n only affects the cost of inspection</div>
+      </div>
+      <div class="q-explain" id="q1-exp">Correct! A larger n makes the OC curve steeper — it moves closer to an ideal "step" shape. Both α and β decrease because the sampling plan becomes better at distinguishing good lots from bad ones. Try it in the tool: raise n and watch both risk values drop.</div>
+    </div>
+
+    <div class="q-block" id="q2">
+      <div class="q-text">2. The consumer's risk β equals Pa evaluated at which quality level?</div>
+      <div class="q-options">
+        <div class="q-opt" onclick="answer('q2',this,false)">a) AQL — the acceptable quality level</div>
+        <div class="q-opt" onclick="answer('q2',this,true)">b) LTPD — the lot tolerance percent defective</div>
+        <div class="q-opt" onclick="answer('q2',this,false)">c) The midpoint between AQL and LTPD</div>
+      </div>
+      <div class="q-explain" id="q2-exp">Correct! β = Pa(LTPD). Because a lot at the LTPD level is considered intolerable, you want Pa to be very low there — that low value IS β. Ideally β ≤ 10%, meaning the plan rejects at least 90% of lots that bad.</div>
+    </div>
+
+    <div class="q-block" id="q3">
+      <div class="q-text">3. You inspect a sample and find d = 3 defectives. The acceptance number is c = 3. What is the decision?</div>
+      <div class="q-options">
+        <div class="q-opt" onclick="answer('q3',this,true)">a) Accept the lot</div>
+        <div class="q-opt" onclick="answer('q3',this,false)">b) Reject the lot</div>
+        <div class="q-opt" onclick="answer('q3',this,false)">c) Inspect the full lot before deciding</div>
+      </div>
+      <div class="q-explain" id="q3-exp">Correct! The rule is: accept if d ≤ c. Here d = 3 and c = 3, so d ≤ c → accept. The lot passes. Try it in the decision box above: set c = 3 and d = 3.</div>
+    </div>
+
+    <div class="q-block" id="q4">
+      <div class="q-text">4. What is the only way to completely eliminate both α and β risks?</div>
+      <div class="q-options">
+        <div class="q-opt" onclick="answer('q4',this,false)">a) Set a very large acceptance number c</div>
+        <div class="q-opt" onclick="answer('q4',this,false)">b) Use a very small AQL (close to 0%)</div>
+        <div class="q-opt" onclick="answer('q4',this,true)">c) Inspect 100% of the lot</div>
+      </div>
+      <div class="q-explain" id="q4-exp">Correct! As long as you use sampling, there will always be some probability of a wrong decision — that is statistically unavoidable. Only 100% inspection removes both risks entirely. The OC curve can be made very steep with large n, but it never becomes a perfect step function with finite sampling.</div>
+    </div>
+
+  </div>
+
+  <div class="calc-note">
+    <div class="cn-label">About the calculation</div>
+    <p>This tool computes the Poisson probability of acceptance directly with the formula
+    <code>Pa = Σ e<sup>−λ</sup>·λ<sup>k</sup>/k!</code> for k = 0 to c, where λ = n × p. This is the <strong>same formula behind the printed Poisson table</strong> in your course material.
+    The printed table rounds values and forces you to <strong>interpolate</strong> between rows, which introduces a tiny rounding error.
+    This tool uses the exact λ value, so results may differ by a few tenths of a percent from the table — both are correct; the table is simply a rounded approximation.</p>
+  </div>
+
+  <p style="font-size:12px;color:var(--text3);line-height:1.6;">
+    <strong style="color:var(--text2);">Important note:</strong> The α and β risks are not operational errors — they are inherent to every statistical sampling process. The only way to eliminate them completely is through 100% inspection. What we can do is minimize them by adjusting n and c. The recommended producer's risk is ≤ 5% and the consumer's risk ≤ 10%.
+  </p>
+
+</main>
+<div id="panel-find" class="tab-panel">
+<div id="panel-find-inner">
+
+  <div class="section-label" style="margin-top:1.5rem;">Choose a mode</div>
+
+  <div class="find-mode-row">
+    <div class="find-mode-card active-auto" id="fmc-auto" onclick="setFindMode('auto')">
+      <div class="fmc-icon">🎯</div>
+      <div class="fmc-title">Find it for me — Auto</div>
+      <div class="fmc-sub">Enter your target α and β. The tool searches all valid (n, c) combinations and lists the ones that meet both thresholds.</div>
+    </div>
+    <div class="find-mode-card" id="fmc-manual" onclick="setFindMode('manual')">
+      <div class="fmc-icon">🔧</div>
+      <div class="fmc-title">Find it yourself — Manual</div>
+      <div class="fmc-sub">You set the targets, then adjust n and c manually. The tool gives live feedback until you find a plan that works.</div>
+    </div>
+  </div>
+
+  <!-- ── AUTO MODE ─────────────────────────────────────────────── -->
+  <div id="find-auto-panel">
+    <div class="section-label">Target parameters</div>
+    <div class="auto-inputs">
+      <div class="ctrl-card">
+        <div class="ctrl-top"><span class="ctrl-name">AQL (%)</span><span><input type="number" class="ctrl-input" id="fa-aql" min="0.1" step="0.1" value="1"><span class="ctrl-unit">%</span></span></div>
+        <input type="range" id="fa-aql-sl" min="0.1" max="10" step="0.1" value="1" oninput="document.getElementById('fa-aql').value=this.value">
+      </div>
+      <div class="ctrl-card">
+        <div class="ctrl-top"><span class="ctrl-name">LTPD (%)</span><span><input type="number" class="ctrl-input" id="fa-ltpd" min="0.5" step="0.5" value="6"><span class="ctrl-unit">%</span></span></div>
+        <input type="range" id="fa-ltpd-sl" min="1" max="30" step="0.5" value="6" oninput="document.getElementById('fa-ltpd').value=this.value">
+      </div>
+      <div class="ctrl-card">
+        <div class="ctrl-top"><span class="ctrl-name">Target α ≤</span><span><input type="number" class="ctrl-input" id="fa-alpha" min="0.1" max="20" step="0.5" value="5"><span class="ctrl-unit">%</span></span></div>
+        <input type="range" id="fa-alpha-sl" min="0.5" max="20" step="0.5" value="5" oninput="document.getElementById('fa-alpha').value=this.value">
+      </div>
+      <div class="ctrl-card">
+        <div class="ctrl-top"><span class="ctrl-name">Target β ≤</span><span><input type="number" class="ctrl-input" id="fa-beta" min="0.1" max="20" step="0.5" value="10"><span class="ctrl-unit">%</span></span></div>
+        <input type="range" id="fa-beta-sl" min="0.5" max="20" step="0.5" value="10" oninput="document.getElementById('fa-beta').value=this.value">
+      </div>
+    </div>
+    <button class="find-btn" onclick="runAutoFind()">🔍 Find valid sampling plans</button>
+    <div id="auto-results"></div>
+  </div>
+
+  <!-- ── MANUAL MODE ────────────────────────────────────────────── -->
+  <div id="find-manual-panel" style="display:none;">
+    <div class="section-label">What data does the problem give you?</div>
+    <div class="data-row">
+      <div class="data-card on-alpha" id="fm-data-alpha" onclick="toggleFindData('alpha')">
+        <div class="dc-check">✓</div>
+        <div>
+          <div class="dc-title">AQL is given → check α (Producer's Risk)</div>
+          <div class="dc-sub">Tick this when the problem provides the Acceptable Quality Level.</div>
+        </div>
+      </div>
+      <div class="data-card on-beta" id="fm-data-beta" onclick="toggleFindData('beta')">
+        <div class="dc-check">✓</div>
+        <div>
+          <div class="dc-title">LTPD is given → check β (Consumer's Risk)</div>
+          <div class="dc-sub">Tick this when the problem provides the Lot Tolerance Percent Defective.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Your targets (fixed)</div>
+    <div class="manual-targets">
+      <div class="ctrl-card" id="fm-card-aql">
+        <div class="ctrl-top"><span class="ctrl-name">AQL (%)</span><span><input type="number" class="ctrl-input" id="fm-aql" min="0.1" step="0.1" value="1"><span class="ctrl-unit">%</span></span></div>
+        <input type="range" id="fm-aql-sl" min="0.1" max="10" step="0.1" value="1" oninput="document.getElementById('fm-aql').value=this.value;updateManual()">
+      </div>
+      <div class="ctrl-card" id="fm-card-ltpd">
+        <div class="ctrl-top"><span class="ctrl-name">LTPD (%)</span><span><input type="number" class="ctrl-input" id="fm-ltpd" min="0.5" step="0.5" value="6"><span class="ctrl-unit">%</span></span></div>
+        <input type="range" id="fm-ltpd-sl" min="1" max="30" step="0.5" value="6" oninput="document.getElementById('fm-ltpd').value=this.value;updateManual()">
+      </div>
+      <div class="ctrl-card" id="fm-card-talpha" style="background:var(--orange-light);border-color:var(--orange-mid);">
+        <div class="ctrl-top"><span class="ctrl-name" style="color:var(--orange);">Target α ≤</span><span><input type="number" class="ctrl-input" id="fm-alpha" min="0.5" max="20" step="0.5" value="5" oninput="updateManual()"><span class="ctrl-unit">%</span></span></div>
+      </div>
+      <div class="ctrl-card" id="fm-card-tbeta" style="background:var(--blue-light);border-color:var(--blue-mid);">
+        <div class="ctrl-top"><span class="ctrl-name" style="color:var(--blue);">Target β ≤</span><span><input type="number" class="ctrl-input" id="fm-beta" min="0.5" max="20" step="0.5" value="10" oninput="updateManual()"><span class="ctrl-unit">%</span></span></div>
+      </div>
+    </div>
+
+    <div class="section-label">Adjust your plan</div>
+    <div class="manual-sliders" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="ctrl-card">
+        <div class="ctrl-top"><span class="ctrl-name" style="text-transform:none;">Lot size (N)</span><span><input type="number" class="ctrl-input" id="fm-N" min="1" step="1" value="1000" oninput="updateManual()"></span></div>
+        <div class="lot-note">Context only — the Poisson approximation does not use N directly.</div>
+      </div>
+      <div class="ctrl-card">
+        <div class="ctrl-top"><span class="ctrl-name" style="text-transform:none;">Sample size (n)</span><span><input type="number" class="ctrl-input" id="fm-n" min="1" step="1" value="60" oninput="syncFindSlider('n');updateManual()"></span></div>
+        <input type="range" id="fm-n-sl" min="1" max="1000" step="1" value="60" oninput="document.getElementById('fm-n').value=this.value;updateManual()">
+      </div>
+      <div class="ctrl-card">
+        <div class="ctrl-top"><span class="ctrl-name">Acceptance number (c)</span><span><input type="number" class="ctrl-input" id="fm-c" min="0" step="1" value="1" oninput="syncFindSlider('c');updateManual()"></span></div>
+        <input type="range" id="fm-c-sl" min="0" max="20" step="1" value="1" oninput="document.getElementById('fm-c').value=this.value;updateManual()">
+      </div>
+    </div>
+
+    <div class="live-risks">
+      <div class="live-card lc-alpha">
+        <div class="lc-label">α — Producer's Risk</div>
+        <div class="lc-val" id="fm-alpha-val">—</div>
+        <div class="lc-bar-wrap"><div class="lc-bar" id="fm-alpha-bar" style="width:0%"></div></div>
+        <div class="lc-status" id="fm-alpha-status"></div>
+      </div>
+      <div class="live-card lc-beta">
+        <div class="lc-label">β — Consumer's Risk</div>
+        <div class="lc-val" id="fm-beta-val">—</div>
+        <div class="lc-bar-wrap"><div class="lc-bar" id="fm-beta-bar" style="width:0%"></div></div>
+        <div class="lc-status" id="fm-beta-status"></div>
+      </div>
+    </div>
+
+    <div class="success-banner" id="fm-success">
+      <h3>🎉 Valid plan found!</h3>
+      <p id="fm-success-msg"></p>
+    </div>
+
+    <div class="find-chart-card">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">OC curve for current plan — AQL (orange) and LTPD (green) points update live.</div>
+      <div class="find-chart-wrap">
+        <canvas id="findChart" role="img" aria-label="OC curve for the plan being designed"></canvas>
+      </div>
+    </div>
+
+    <div class="summary-box">
+      <div class="sb-label">Interpretation</div>
+      <div class="sb-chips" id="fm-chips"></div>
+      <div class="sb-interp" id="fm-interp"></div>
+      <div class="sb-interp" id="fm-why" style="margin-top:12px;padding:12px 14px;background:var(--bg);border-radius:8px;border-left:3px solid var(--orange);"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+
+<footer>Teaching tool · OC Curve · Industrial Quality · Universidad de Lima</footer>
+
+<script>
+let mode = 'alpha';
+let planStats = { alpha: 0, beta: 0, aql: 1, ltpd: 6 };
+let hasAlpha = true;   // problem gives AQL → compute producer's risk
+let hasBeta  = true;   // problem gives LTPD → compute consumer's risk
+
+function poissonPMF(lambda, k) {
+  return Math.exp(-lambda) * Math.pow(lambda, k) / factorial(k);
+}
+function factorial(k) { let f = 1; for (let i = 2; i <= k; i++) f *= i; return f; }
+function poissonCDF(lambda, c) {
+  let sum = 0, term = Math.exp(-lambda);
+  for (let k = 0; k <= c; k++) { sum += term; term *= lambda / (k + 1); }
+  return Math.min(sum, 1);
+}
+
+function buildOC(n, c) {
+  const pts = [];
+  for (let p = 0; p <= 0.30; p += 0.004) {
+    pts.push({ x: +(p * 100).toFixed(3), y: +poissonCDF(n * p, c).toFixed(5) });
+  }
+  return pts;
+}
+
+// ---- input sync ----
+function getVals() {
+  return {
+    N:    Math.max(1, Math.round(+document.getElementById('in-N').value || 0)),
+    n:    Math.max(1, Math.round(+document.getElementById('in-n').value || 0)),
+    c:    Math.max(0, Math.round(+document.getElementById('in-c').value || 0)),
+    aql:  Math.max(0.01, +document.getElementById('in-aql').value || 0),
+    ltpd: Math.max(0.1, +document.getElementById('in-ltpd').value || 0),
+  };
+}
+
+function syncFromSlider(which) {
+  document.getElementById('in-' + which).value = document.getElementById('sl-' + which).value;
+  update();
+}
+
+function syncFromInput(which) {
+  const sl = document.getElementById('sl-' + which);
+  if (sl) {
+    let v = +document.getElementById('in-' + which).value;
+    if (v < +sl.min) v = +sl.min;
+    if (v > +sl.max) v = +sl.max;
+    sl.value = v;
+  }
+  update();
+}
+
+['N','n','c','aql','ltpd'].forEach(w => {
+  document.getElementById('in-' + w).addEventListener('input', () => syncFromInput(w));
+});
+document.getElementById('in-d').addEventListener('input', update);
+
+function setMode(m) {
+  // don't allow switching to a disabled risk
+  if (m === 'alpha' && !hasAlpha) return;
+  if (m === 'beta'  && !hasBeta)  return;
+  mode = m;
+  document.getElementById('mode-alpha').className = 'mode-btn' + (m === 'alpha' ? ' active-alpha' : '');
+  document.getElementById('mode-beta').className  = 'mode-btn' + (m === 'beta'  ? ' active-beta'  : '');
+  update();
+}
+
+function toggleData(which) {
+  if (which === 'alpha') {
+    // can't turn off the last remaining one
+    if (hasAlpha && !hasBeta) return;
+    hasAlpha = !hasAlpha;
+  } else {
+    if (hasBeta && !hasAlpha) return;
+    hasBeta = !hasBeta;
+  }
+  applyDataState();
+  update();
+}
+
+function applyDataState() {
+  // data cards visual
+  document.getElementById('data-alpha').className = 'data-card' + (hasAlpha ? ' on-alpha' : '');
+  document.getElementById('data-beta').className  = 'data-card' + (hasBeta  ? ' on-beta'  : '');
+  document.querySelector('#data-alpha .dc-check').textContent = hasAlpha ? '✓' : '';
+  document.querySelector('#data-beta .dc-check').textContent  = hasBeta  ? '✓' : '';
+
+  // disable the corresponding parameter cards
+  document.getElementById('card-aql').className  = 'ctrl-card' + (hasAlpha ? '' : ' disabled');
+  document.getElementById('card-ltpd').className = 'ctrl-card' + (hasBeta  ? '' : ' disabled');
+
+  // disable the mode tabs
+  document.getElementById('mode-alpha').disabled = !hasAlpha;
+  document.getElementById('mode-beta').disabled  = !hasBeta;
+
+  // if current mode is now disabled, switch to the available one
+  if (mode === 'alpha' && !hasAlpha) { setMode('beta');  return; }
+  if (mode === 'beta'  && !hasBeta)  { setMode('alpha'); return; }
+}
+
+// ---- chart ----
+let chart;
+// Guide lines that follow the cursor along the OC curve (defensive)
+const hoverLinePlugin = {
+  id: 'hoverLine',
+  afterDraw(c) {
+    try {
+      const tt = c.tooltip;
+      if (!tt || typeof tt.getActiveElements !== 'function') return;
+      const active = tt.getActiveElements();
+      if (!active || !active.length) return;
+      const el = active.find(a => a.datasetIndex === 0);
+      if (!el || !el.element) return;
+      const area = c.chartArea;
+      if (!area) return;
+      const x = el.element.x, y = el.element.y;
+      const ctx = c.ctx;
+      ctx.save();
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = 'rgba(55,138,221,0.55)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, area.top); ctx.lineTo(x, area.bottom); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(area.left, y); ctx.lineTo(x, y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#378ADD';
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.fill(); ctx.stroke();
+      ctx.restore();
+    } catch (e) { /* never let the guide lines break rendering */ }
+  }
+};
+
+function initChart() {
+  const ctx = document.getElementById('ocChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line', data: { datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+      interaction: { mode: 'nearest', intersect: false, axis: 'x' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          enabled: true,
+          backgroundColor: '#1a1a18', titleColor: '#fff', bodyColor: '#fff',
+          padding: 12, displayColors: false, cornerRadius: 8,
+          titleFont: { size: 13, weight: '600' }, bodyFont: { size: 13 },
+          filter: item => item.datasetIndex === 0,
+          callbacks: {
+            title: items => (items && items.length) ? 'p (% defectives) = ' + (+items[0].parsed.x).toFixed(2) + '%' : '',
+            label: items => 'Pa (prob. of acceptance) = ' + (items.parsed.y * 100).toFixed(2) + '%',
+            afterBody: () => {
+              const lines = ['', 'Current plan risks:'];
+              if (hasAlpha) lines.push('α (at AQL ' + planStats.aql + '%) = ' + (planStats.alpha * 100).toFixed(2) + '%');
+              if (hasBeta)  lines.push('β (at LTPD ' + planStats.ltpd + '%) = ' + (planStats.beta * 100).toFixed(2) + '%');
+              return lines;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { type: 'linear', title: { display: true, text: 'Actual % Defectives in the lot (p)', color: '#9a9a92', font: { size: 12 } }, min: 0, max: 30, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => v + '%', stepSize: 5, color: '#9a9a92' } },
+        y: { title: { display: true, text: 'Probability of accepting the lot (Pa)', color: '#9a9a92', font: { size: 12 } }, min: 0, max: 1, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: v => (v*100).toFixed(0) + '%', stepSize: 0.1, color: '#9a9a92' } }
+      }
+    },
+    plugins: [hoverLinePlugin]
+  });
+}
+
+// ---- step-by-step rendering ----
+function renderSteps(v) {
+  const isAlpha = (mode === 'alpha');
+  const p = (isAlpha ? v.aql : v.ltpd) / 100;
+  const qualityLabel = isAlpha ? 'AQL' : 'LTPD';
+  const pPct = isAlpha ? v.aql : v.ltpd;
+  const lambda = v.n * p;
+  const pa = poissonCDF(lambda, v.c);
+  const cls = isAlpha ? 'alpha' : 'beta';
+  const hl  = isAlpha ? 'hl-orange' : 'hl-blue';
+
+  // Build the sum of terms for step 2
+  let termsHtml = '';
+  let termsNumeric = [];
+  for (let k = 0; k <= v.c; k++) {
+    const pmf = poissonPMF(lambda, k);
+    termsNumeric.push(pmf);
+    termsHtml += `P(X=${k}) = e<sup>−${lambda.toFixed(3)}</sup> · ${lambda.toFixed(3)}<sup>${k}</sup> / ${k}! = <span class="${hl}">${pmf.toFixed(5)}</span><br>`;
+  }
+  const sumStr = termsNumeric.map(t => t.toFixed(5)).join(' + ');
+
+  const panel = document.getElementById('steps-panel');
+
+  const step3 = isAlpha
+    ? `<div class="step-formula">α = 1 − Pa = 1 − <span class="hl-orange">${pa.toFixed(5)}</span> = <span class="hl-orange">${(1-pa).toFixed(5)}</span><br>α = <span class="hl-orange">${((1-pa)*100).toFixed(2)}%</span></div>
+       <div class="step-explain">The producer's risk is the probability of <strong>rejecting</strong> a lot that actually meets the AQL — that is, everything that is <em>not</em> accepted.</div>`
+    : `<div class="step-formula">β = Pa = <span class="hl-blue">${pa.toFixed(5)}</span><br>β = <span class="hl-blue">${(pa*100).toFixed(2)}%</span></div>
+       <div class="step-explain">The consumer's risk is the probability of <strong>accepting</strong> a lot whose quality is at the intolerable LTPD level — so β equals Pa directly.</div>`;
+
+  const resultVal = isAlpha ? (1-pa) : pa;
+  const pctVal = resultVal * 100;
+
+  // Three-tier thresholds (different for producer vs consumer risk)
+  const t = isAlpha
+    ? { ok: 5,  mid: 10, okLabel: '≤ 5%',  midLabel: '5–10%', highLabel: '> 10%' }
+    : { ok: 10, mid: 20, okLabel: '≤ 10%', midLabel: '10–20%', highLabel: '> 20%' };
+
+  let level, statusClass, statusTxt;
+  if (pctVal <= t.ok)       { level = 'acceptable'; statusClass = 'status-ok';   statusTxt = '✓ Acceptable (' + t.okLabel + ')'; }
+  else if (pctVal <= t.mid) { level = 'medium';     statusClass = 'status-warn'; statusTxt = '◐ Medium (' + t.midLabel + ')'; }
+  else                      { level = 'high';        statusClass = 'status-high'; statusTxt = '⚠ High (' + t.highLabel + ')'; }
+
+  const who = isAlpha ? 'producer' : 'consumer';
+  const consequence = isAlpha
+    ? 'good lots get rejected, forcing re-inspection, returns and friction with a supplier who is actually meeting the AQL'
+    : 'defective lots slip through to the buyer, risking field failures, line stoppages and customer complaints';
+
+  let levelReason;
+  if (level === 'acceptable') {
+    levelReason = `Because ${(isAlpha?'α':'β')} = <strong>${pctVal.toFixed(2)}%</strong> is at or below the <strong>${t.okLabel}</strong> guideline, the ${who} is well protected. This plan keeps the risk that ${consequence} acceptably low.`;
+  } else if (level === 'medium') {
+    levelReason = `Because ${(isAlpha?'α':'β')} = <strong>${pctVal.toFixed(2)}%</strong> falls in the <strong>${t.midLabel}</strong> range — above the ${t.okLabel} target but not extreme — the risk is borderline. It may be tolerable for low-stakes inspections, but it means ${consequence} more often than ideal. Raising n (and adjusting c) would bring it down.`;
+  } else {
+    levelReason = `Because ${(isAlpha?'α':'β')} = <strong>${pctVal.toFixed(2)}%</strong> exceeds <strong>${t.mid}%</strong>, the risk is too high: ${consequence} far too often. The plan should be redesigned — typically by increasing the sample size n${isAlpha ? ' or relaxing c' : ' or tightening c'} — to pull the risk back toward the ${t.okLabel} target.`;
+  }
+
+  const levelScale =
+    `<div class="level-scale">
+       <span class="level-tag lt-ok${level==='acceptable'?' on':''}">Acceptable ${t.okLabel}</span>
+       <span class="level-tag lt-mid${level==='medium'?' on':''}">Medium ${t.midLabel}</span>
+       <span class="level-tag lt-high${level==='high'?' on':''}">High ${t.highLabel}</span>
+     </div>`;
+
+  const levelBox = `<div class="level-explain"><strong>Why is this ${level}?</strong> ${levelScale} ${levelReason}</div>`;
+
+  panel.innerHTML = `
+    <div class="step ${cls}">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <div class="step-title">Calculate λ (lambda)</div>
+        <div class="step-explain">Convert the ${qualityLabel} percentage to a proportion, then multiply by the sample size n. λ is the expected number of defectives in the sample.</div>
+        <div class="step-formula">p = ${qualityLabel} = ${pPct}% = <span class="${hl}">${p.toFixed(4)}</span><br>λ = n × p = ${v.n} × ${p.toFixed(4)} = <span class="${hl}">${lambda.toFixed(3)}</span></div>
+      </div>
+    </div>
+
+    <div class="step ${cls}">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <div class="step-title">Find Pa from the Poisson distribution</div>
+        <div class="step-explain">Pa is the probability of finding c = ${v.c} or fewer defectives in the sample. Sum the Poisson probabilities from X=0 up to X=${v.c}.</div>
+        <div class="step-formula">${termsHtml}</div>
+        <div class="step-formula">Pa = P(X ≤ ${v.c}) = ${sumStr} = <span class="${hl}">${pa.toFixed(5)}</span></div>
+      </div>
+    </div>
+
+    <div class="step ${cls}">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <div class="step-title">${isAlpha ? 'Calculate α = 1 − Pa' : 'Calculate β = Pa'}</div>
+        ${step3}
+        <div class="result-banner ${cls}">
+          <div>
+            <div class="result-label">${isAlpha ? 'α — Producer\'s Risk' : 'β — Consumer\'s Risk'}</div>
+            <div class="rstatus ${statusClass}">${statusTxt}</div>
+          </div>
+          <div class="result-value">${pctVal.toFixed(2)}%</div>
+        </div>
+        ${levelBox}
+      </div>
+    </div>
+  `;
+}
+
+function update() {
+  const v = getVals();
+
+  renderSteps(v);
+
+  // ---- lot acceptance decision ----
+  const d = Math.max(0, Math.round(+document.getElementById('in-d').value || 0));
+  const accepted = d <= v.c;
+  const sampleProp = v.n > 0 ? d / v.n : 0;
+  document.getElementById('dec-rule').innerHTML =
+    `Decision rule: <strong>accept</strong> the lot if d ≤ c, <strong>reject</strong> if d &gt; c.<br>` +
+    `Here: d = <strong>${d}</strong> &nbsp;vs&nbsp; c = <strong>${v.c}</strong> &nbsp;→&nbsp; ${d} ${accepted ? '≤' : '&gt;'} ${v.c}<br>` +
+    `<span style="color:var(--text3);">Note: d is a <strong>count</strong> (number of defectives). The sample <strong>proportion</strong> is p̂ = d / n = ${d} / ${v.n} = <strong>${sampleProp.toFixed(4)}</strong> (${(sampleProp*100).toFixed(2)}%). The decision uses the count d, not the proportion.</span>`;
+  document.getElementById('dec-result').className = 'dec-result ' + (accepted ? 'accept' : 'reject');
+  document.getElementById('dec-result').innerHTML =
+    `<span class="dec-badge">${accepted ? 'ACCEPT' : 'REJECT'}</span>` +
+    `<span class="dec-text">The ${d} defective${d === 1 ? '' : 's'} found ${accepted
+      ? `do not exceed the acceptance number c = ${v.c}, so the <strong>lot is accepted</strong>.`
+      : `exceed the acceptance number c = ${v.c}, so the <strong>lot is rejected</strong>.`}</span>`;
+
+  // chart
+  const paAQL  = poissonCDF(v.n * v.aql  / 100, v.c);
+  const paLTPD = poissonCDF(v.n * v.ltpd / 100, v.c);
+  const alpha = 1 - paAQL;
+  const beta  = paLTPD;
+
+  // store for tooltip
+  planStats = { alpha: alpha, beta: beta, aql: v.aql, ltpd: v.ltpd };
+
+  // summary chips
+  let chips =
+    `<div class="sb-chip"><span class="ck">N — Lot size</span><span class="cv">${v.N}</span></div>` +
+    `<div class="sb-chip"><span class="ck">n — Sample</span><span class="cv">${v.n}</span></div>` +
+    `<div class="sb-chip"><span class="ck">c — Accept #</span><span class="cv">${v.c}</span></div>`;
+  if (hasAlpha) chips += `<div class="sb-chip"><span class="ck">AQL</span><span class="cv">${v.aql}%</span></div>`;
+  if (hasBeta)  chips += `<div class="sb-chip"><span class="ck">LTPD</span><span class="cv">${v.ltpd}%</span></div>`;
+  if (hasAlpha) chips += `<div class="sb-chip alpha"><span class="ck">α — Producer</span><span class="cv">${(alpha*100).toFixed(1)}%</span></div>`;
+  if (hasBeta)  chips += `<div class="sb-chip beta"><span class="ck">β — Consumer</span><span class="cv">${(beta*100).toFixed(1)}%</span></div>`;
+  document.getElementById('sb-chips').innerHTML = chips;
+
+  const aOk = alpha <= 0.05, bOk = beta <= 0.10;
+  let interp = `Under this sampling plan, a sample of <strong>n = ${v.n}</strong> units is drawn from a lot of <strong>N = ${v.N}</strong>, and the lot is accepted if <strong>${v.c} or fewer</strong> defectives are found. `;
+  if (hasAlpha) {
+    interp += `If the lot's true quality is at the agreed AQL of ${v.aql}%, it will still be wrongly rejected about <strong>${(alpha*100).toFixed(1)}% of the time</strong> — this is the producer's risk (α), which is ${aOk ? 'within the usual ≤ 5% target' : 'above the usual ≤ 5% target, so the producer is over-penalized'}. `;
+  }
+  if (hasBeta) {
+    interp += `If the lot is as bad as the LTPD of ${v.ltpd}%, it will still be wrongly accepted about <strong>${(beta*100).toFixed(1)}% of the time</strong> — this is the consumer's risk (β), which is ${bOk ? 'within the usual ≤ 10% target' : 'above the usual ≤ 10% target, so the buyer is poorly protected'}. `;
+  }
+  if (hasAlpha && hasBeta) {
+    interp += (aOk && bOk) ? 'Both parties are reasonably protected by this plan.' : 'Increasing n (and adjusting c) would lower these risks and protect both parties better.';
+  } else {
+    interp += `Only the ${hasAlpha ? 'producer\'s risk (α)' : 'consumer\'s risk (β)'} is being evaluated, because the problem provides ${hasAlpha ? 'the AQL only' : 'the LTPD only'}.`;
+  }
+  document.getElementById('sb-interp').innerHTML = interp;
+
+  const pts = buildOC(v.n, v.c);
+  const datasets = [
+    { label: 'OC Curve', data: pts, borderColor: '#378ADD', backgroundColor: 'rgba(55,138,221,0.07)', borderWidth: 2.5, pointRadius: 0, fill: true, tension: 0.35 }
+  ];
+  if (hasAlpha) {
+    datasets.push({ label: 'AQL line',  data: [{ x:0, y:paAQL  }, { x:v.aql,  y:paAQL  }, { x:v.aql,  y:0 }], borderColor: 'rgba(216,90,48,0.5)',  borderDash:[6,4], borderWidth:1.5, pointRadius:0, pointHitRadius:0, showLine:true, fill:false });
+    datasets.push({ label: 'AQL point',  data: [{ x:v.aql,  y:paAQL  }], pointRadius:9, pointHoverRadius:11, pointHitRadius:0, backgroundColor:'#D85A30', borderColor:'#fff', borderWidth:2, showLine:false });
+  }
+  if (hasBeta) {
+    datasets.push({ label: 'LTPD line', data: [{ x:0, y:paLTPD }, { x:v.ltpd, y:paLTPD }, { x:v.ltpd, y:0 }], borderColor: 'rgba(29,158,117,0.5)', borderDash:[6,4], borderWidth:1.5, pointRadius:0, pointHitRadius:0, showLine:true, fill:false });
+    datasets.push({ label: 'LTPD point', data: [{ x:v.ltpd, y:paLTPD }], pointRadius:9, pointHoverRadius:11, pointHitRadius:0, backgroundColor:'#1D9E75', borderColor:'#fff', borderWidth:2, showLine:false });
+  }
+  chart.data.datasets = datasets;
+  chart.update();
+}
+
+applyDataState();
+initChart();
+update();
+
+// ---- quiz ----
+function toggleQuiz() {
+  const btn = document.getElementById('quiz-toggle');
+  const panel = document.getElementById('quiz-panel');
+  btn.classList.toggle('open');
+  panel.classList.toggle('open');
+}
+
+function answer(qId, el, isCorrect) {
+  const block = document.getElementById(qId);
+  const opts = block.querySelectorAll('.q-opt');
+  const exp  = document.getElementById(qId + '-exp');
+  opts.forEach(o => {
+    o.classList.add('disabled');
+    if (o === el) o.classList.add(isCorrect ? 'correct' : 'wrong');
+  });
+  if (!isCorrect) {
+    // highlight correct one
+    opts.forEach(o => { if (o.onclick.toString().includes('true')) o.classList.add('correct'); });
+  }
+  exp.classList.add('show');
+}
+
+// ═══════════════════════════════════════════════
+// FIND THE PLAN
+// ═══════════════════════════════════════════════
+let findMode = 'auto';
+let findChart = null;
+let findStats = { alpha: 0, beta: 0, aql: 1, ltpd: 6 };
+let prevManual = null;   // remembers last {n, c, alpha, beta} to explain why risks moved
+let fmHasAlpha = true;   // manual mode: AQL given → check α
+let fmHasBeta  = true;   // manual mode: LTPD given → check β
+
+function switchTab(tab) {
+  document.getElementById('panel-analysis').classList.toggle('active', tab === 'analysis');
+  document.getElementById('panel-find').classList.toggle('active',    tab === 'find');
+  document.getElementById('tab-btn-analysis').classList.toggle('active', tab === 'analysis');
+  document.getElementById('tab-btn-find').classList.toggle('active',    tab === 'find');
+  if (tab === 'find' && !findChart) initFindChart();
+}
+
+function setFindMode(m) {
+  findMode = m;
+  document.getElementById('find-auto-panel').style.display   = m === 'auto'   ? 'block' : 'none';
+  document.getElementById('find-manual-panel').style.display = m === 'manual' ? 'block' : 'none';
+  document.getElementById('fmc-auto').className   = 'find-mode-card' + (m === 'auto'   ? ' active-auto'   : '');
+  document.getElementById('fmc-manual').className = 'find-mode-card' + (m === 'manual' ? ' active-manual' : '');
+  if (m === 'manual') { if (!findChart) initFindChart(); applyFindDataState(); updateManual(); }
+}
+
+function syncFindSlider(which) {
+  const sl = document.getElementById('fm-' + which + '-sl');
+  if (sl) sl.value = document.getElementById('fm-' + which).value;
+}
+
+// ── Binary search helpers ──────────────────────────────────────────
+function minNforPaAtMost(c, p, threshold) {
+  // smallest n where poissonCDF(n*p, c) <= threshold
+  if (p <= 0) return null;
+  if (poissonCDF(5000 * p, c) > threshold) return null;
+  let lo = 1, hi = 5000;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    poissonCDF(mid * p, c) <= threshold ? (hi = mid) : (lo = mid + 1);
+  }
+  return lo;
+}
+
+function maxNforPaAtLeast(c, p, threshold) {
+  // largest n where poissonCDF(n*p, c) >= threshold
+  if (p <= 0) return 5000;
+  if (poissonCDF(1 * p, c) < threshold) return null;
+  if (poissonCDF(5000 * p, c) >= threshold) return 5000;
+  let lo = 1, hi = 5000;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2);
+    poissonCDF(mid * p, c) >= threshold ? (lo = mid) : (hi = mid - 1);
+  }
+  return lo;
+}
+
+// ── AUTO FIND ─────────────────────────────────────────────────────
+function runAutoFind() {
+  const aql   = +document.getElementById('fa-aql').value / 100;
+  const ltpd  = +document.getElementById('fa-ltpd').value / 100;
+  const tA    = +document.getElementById('fa-alpha').value / 100;
+  const tB    = +document.getElementById('fa-beta').value / 100;
+  if (ltpd <= aql) { document.getElementById('auto-results').innerHTML =
+    '<div class="no-plan-msg">⚠ LTPD must be greater than AQL.</div>'; return; }
+
+  const plans = [];
+  for (let c = 0; c <= 15; c++) {
+    const nMin = minNforPaAtMost(c, ltpd, tB);
+    const nMax = maxNforPaAtLeast(c, aql, 1 - tA);
+    if (nMin !== null && nMax !== null && nMin <= nMax) {
+      const n = nMin;
+      const alpha = 1 - poissonCDF(n * aql, c);
+      const beta  = poissonCDF(n * ltpd, c);
+      plans.push({ n, c, alpha, beta });
+    }
+  }
+
+  const out = document.getElementById('auto-results');
+  if (!plans.length) {
+    out.innerHTML = '<div class="no-plan-msg">No valid plan found for these targets within n ≤ 5,000. Try relaxing α or β targets, or verify that LTPD > AQL.</div>';
+    return;
+  }
+
+  const aqlPct  = (aql  * 100).toFixed(1);
+  const ltpdPct = (ltpd * 100).toFixed(1);
+
+  let rows = plans.map(p => {
+    const aBadge = p.alpha <= 0.05 ? 'ok' : p.alpha <= 0.10 ? 'warn' : 'high';
+    const bBadge = p.beta  <= 0.10 ? 'ok' : p.beta  <= 0.20 ? 'warn' : 'high';
+    return `<tr onclick="loadPlanToManual(${p.n},${p.c},${aqlPct},${ltpdPct})">
+      <td><strong>${p.n}</strong></td>
+      <td><strong>${p.c}</strong></td>
+      <td>${(p.alpha*100).toFixed(2)}% <span class="badge badge-${aBadge}">${aBadge === 'ok' ? '✓' : '⚠'}</span></td>
+      <td>${(p.beta*100).toFixed(2)}%  <span class="badge badge-${bBadge}">${bBadge === 'ok' ? '✓' : '⚠'}</span></td>
+      <td><button class="try-btn" onclick="event.stopPropagation();loadPlanToManual(${p.n},${p.c},${aqlPct},${ltpdPct})">Try it →</button></td>
+    </tr>`;
+  }).join('');
+
+  out.innerHTML = `
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">
+      Found <strong>${plans.length} valid plan${plans.length > 1 ? 's' : ''}</strong> for AQL=${aqlPct}%, LTPD=${ltpdPct}%, α ≤ ${(tA*100).toFixed(0)}%, β ≤ ${(tB*100).toFixed(0)}%.
+      Each row shows the <em>minimum n</em> for that c. Click any row to explore it in Manual mode.
+    </p>
+    <table class="results-table">
+      <thead><tr><th>n (sample)</th><th>c (accept #)</th><th>α achieved</th><th>β achieved</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="font-size:12px;color:var(--text3);">Tip: smaller n means lower inspection cost, but larger c may reduce protection. The best plan balances cost and risk.</p>`;
+}
+
+function loadPlanToManual(n, c, aql, ltpd) {
+  setFindMode('manual');
+  document.getElementById('fm-n').value    = n;
+  document.getElementById('fm-c').value    = c;
+  document.getElementById('fm-aql').value  = aql;
+  document.getElementById('fm-ltpd').value = ltpd;
+  document.getElementById('fm-n-sl').value = Math.min(n, 1000);
+  document.getElementById('fm-c-sl').value = Math.min(c, 20);
+  document.getElementById('fm-aql-sl').value  = aql;
+  document.getElementById('fm-ltpd-sl').value = ltpd;
+  updateManual();
+}
+
+// ── MANUAL MODE ───────────────────────────────────────────────────
+function toggleFindData(which) {
+  if (which === 'alpha') {
+    if (fmHasAlpha && !fmHasBeta) return;   // keep at least one
+    fmHasAlpha = !fmHasAlpha;
+  } else {
+    if (fmHasBeta && !fmHasAlpha) return;
+    fmHasBeta = !fmHasBeta;
+  }
+  applyFindDataState();
+  updateManual();
+}
+
+function applyFindDataState() {
+  document.getElementById('fm-data-alpha').className = 'data-card' + (fmHasAlpha ? ' on-alpha' : '');
+  document.getElementById('fm-data-beta').className  = 'data-card' + (fmHasBeta  ? ' on-beta'  : '');
+  document.querySelector('#fm-data-alpha .dc-check').textContent = fmHasAlpha ? '✓' : '';
+  document.querySelector('#fm-data-beta .dc-check').textContent  = fmHasBeta  ? '✓' : '';
+  // dim disabled parameter + target cards
+  document.getElementById('fm-card-aql').className    = 'ctrl-card' + (fmHasAlpha ? '' : ' disabled');
+  document.getElementById('fm-card-talpha').className = 'ctrl-card' + (fmHasAlpha ? '' : ' disabled');
+  document.getElementById('fm-card-ltpd').className   = 'ctrl-card' + (fmHasBeta ? '' : ' disabled');
+  document.getElementById('fm-card-tbeta').className  = 'ctrl-card' + (fmHasBeta ? '' : ' disabled');
+  // keep target-card colors when active
+  if (fmHasAlpha) document.getElementById('fm-card-talpha').setAttribute('style','background:var(--orange-light);border-color:var(--orange-mid);');
+  else document.getElementById('fm-card-talpha').removeAttribute('style');
+  if (fmHasBeta) document.getElementById('fm-card-tbeta').setAttribute('style','background:var(--blue-light);border-color:var(--blue-mid);');
+  else document.getElementById('fm-card-tbeta').removeAttribute('style');
+  // show/hide the live risk cards
+  document.querySelector('.live-card.lc-alpha').style.display = fmHasAlpha ? '' : 'none';
+  document.querySelector('.live-card.lc-beta').style.display  = fmHasBeta  ? '' : 'none';
+}
+
+function updateManual() {
+  const N    = Math.max(1, Math.round(+document.getElementById('fm-N').value || 1));
+  const n    = Math.max(1, +document.getElementById('fm-n').value    || 1);
+  const c    = Math.max(0, +document.getElementById('fm-c').value    || 0);
+  const aql  = Math.max(0.01, +document.getElementById('fm-aql').value  || 1);
+  const ltpd = Math.max(0.1,  +document.getElementById('fm-ltpd').value || 6);
+  const tA   = Math.max(0.1, +document.getElementById('fm-alpha').value || 5) / 100;
+  const tB   = Math.max(0.1, +document.getElementById('fm-beta').value  || 10) / 100;
+
+  const paAQL  = poissonCDF(n * aql  / 100, c);
+  const paLTPD = poissonCDF(n * ltpd / 100, c);
+  const alpha  = 1 - paAQL;
+  const beta   = paLTPD;
+
+  findStats = { alpha: alpha, beta: beta, aql: aql, ltpd: ltpd };
+
+  // Alpha card
+  const aOk = alpha <= tA;
+  const aLvl = alpha <= tA ? 'ok' : alpha <= tA * 2 ? 'warn' : 'high';
+  document.getElementById('fm-alpha-val').textContent    = (alpha * 100).toFixed(2) + '%';
+  document.getElementById('fm-alpha-bar').style.width   = Math.min(alpha / (tA * 2), 1) * 100 + '%';
+  document.getElementById('fm-alpha-bar').className     = 'lc-bar ' + aLvl;
+  document.getElementById('fm-alpha-status').textContent = aOk
+    ? '✓ Within target (≤ ' + (tA*100).toFixed(0) + '%)'
+    : '✗ Above target — need ≤ ' + (tA*100).toFixed(0) + '%';
+  document.getElementById('fm-alpha-status').className  = 'lc-status ' + aLvl;
+
+  // Beta card
+  const bOk = beta <= tB;
+  const bLvl = beta <= tB ? 'ok' : beta <= tB * 2 ? 'warn' : 'high';
+  document.getElementById('fm-beta-val').textContent    = (beta * 100).toFixed(2) + '%';
+  document.getElementById('fm-beta-bar').style.width   = Math.min(beta / (tB * 2), 1) * 100 + '%';
+  document.getElementById('fm-beta-bar').className     = 'lc-bar ' + bLvl;
+  document.getElementById('fm-beta-status').textContent = bOk
+    ? '✓ Within target (≤ ' + (tB*100).toFixed(0) + '%)'
+    : '✗ Above target — need ≤ ' + (tB*100).toFixed(0) + '%';
+  document.getElementById('fm-beta-status').className  = 'lc-status ' + bLvl;
+
+  // Success banner — only require the risks that are active
+  const aPass = !fmHasAlpha || aOk;
+  const bPass = !fmHasBeta  || bOk;
+  const success = document.getElementById('fm-success');
+  if (aPass && bPass) {
+    success.style.display = 'block';
+    let msg = `Plan (n = ${n}, c = ${c}) meets `;
+    if (fmHasAlpha && fmHasBeta) {
+      msg += `both targets: α = ${(alpha*100).toFixed(2)}% ≤ ${(tA*100).toFixed(0)}%, β = ${(beta*100).toFixed(2)}% ≤ ${(tB*100).toFixed(0)}%.`;
+    } else if (fmHasAlpha) {
+      msg += `the α target: α = ${(alpha*100).toFixed(2)}% ≤ ${(tA*100).toFixed(0)}%.`;
+    } else {
+      msg += `the β target: β = ${(beta*100).toFixed(2)}% ≤ ${(tB*100).toFixed(0)}%.`;
+    }
+    document.getElementById('fm-success-msg').textContent = msg;
+  } else {
+    success.style.display = 'none';
+  }
+
+  // Update find chart
+  if (findChart) {
+    const pts = buildOC(n, c);
+    const ds = [
+      { label:'OC', data:pts, borderColor:'#378ADD', backgroundColor:'rgba(55,138,221,0.07)', borderWidth:2.5, pointRadius:0, fill:true, tension:0.35 },
+    ];
+    if (fmHasAlpha) {
+      ds.push({ data:[{x:0,y:paAQL},{x:aql,y:paAQL},{x:aql,y:0}], borderColor:'rgba(216,90,48,0.5)', borderDash:[6,4], borderWidth:1.5, pointRadius:0, pointHitRadius:0, showLine:true, fill:false });
+      ds.push({ data:[{x:aql,y:paAQL}], pointRadius:9, pointHitRadius:0, backgroundColor:aOk?'#1D9E75':'#D85A30', borderColor:'#fff', borderWidth:2, showLine:false });
+    }
+    if (fmHasBeta) {
+      ds.push({ data:[{x:0,y:paLTPD},{x:ltpd,y:paLTPD},{x:ltpd,y:0}], borderColor:'rgba(29,158,117,0.5)', borderDash:[6,4], borderWidth:1.5, pointRadius:0, pointHitRadius:0, showLine:true, fill:false });
+      ds.push({ data:[{x:ltpd,y:paLTPD}], pointRadius:9, pointHitRadius:0, backgroundColor:bOk?'#1D9E75':'#D85A30', borderColor:'#fff', borderWidth:2, showLine:false });
+    }
+    findChart.data.datasets = ds;
+    findChart.update();
+  }
+
+  // ── Interpretation box ──
+  const chipsEl = document.getElementById('fm-chips');
+  if (chipsEl) {
+    let chips =
+      `<div class="sb-chip"><span class="ck">N — Lot size</span><span class="cv">${N}</span></div>` +
+      `<div class="sb-chip"><span class="ck">n — Sample</span><span class="cv">${n}</span></div>` +
+      `<div class="sb-chip"><span class="ck">c — Accept #</span><span class="cv">${c}</span></div>`;
+    if (fmHasAlpha) chips += `<div class="sb-chip"><span class="ck">AQL</span><span class="cv">${aql}%</span></div>`;
+    if (fmHasBeta)  chips += `<div class="sb-chip"><span class="ck">LTPD</span><span class="cv">${ltpd}%</span></div>`;
+    if (fmHasAlpha) chips += `<div class="sb-chip alpha"><span class="ck">α — Producer</span><span class="cv">${(alpha*100).toFixed(1)}%</span></div>`;
+    if (fmHasBeta)  chips += `<div class="sb-chip beta"><span class="ck">β — Consumer</span><span class="cv">${(beta*100).toFixed(1)}%</span></div>`;
+    chipsEl.innerHTML = chips;
+
+    let txt = `This plan draws a sample of <strong>n = ${n}</strong> units from a lot of <strong>N = ${N}</strong> and accepts the lot with <strong>${c} or fewer</strong> defectives. `;
+    if (fmHasAlpha && fmHasBeta) {
+      if (aOk && bOk) {
+        txt += `Both risks meet your targets: α = ${(alpha*100).toFixed(2)}% (≤ ${(tA*100).toFixed(0)}%) and β = ${(beta*100).toFixed(2)}% (≤ ${(tB*100).toFixed(0)}%). <strong>The plan is valid</strong> — the producer is protected against unfair rejections and the consumer against accepting bad lots.`;
+      } else if (!aOk && !bOk) {
+        txt += `<strong>Neither target is met yet.</strong> α = ${(alpha*100).toFixed(2)}% (needs ≤ ${(tA*100).toFixed(0)}%) and β = ${(beta*100).toFixed(2)}% (needs ≤ ${(tB*100).toFixed(0)}%). When both are too high, the sample is too small to discriminate: try increasing <strong>n</strong> first.`;
+      } else if (!aOk) {
+        txt += `β = ${(beta*100).toFixed(2)}% already meets its target (≤ ${(tB*100).toFixed(0)}%), but α = ${(alpha*100).toFixed(2)}% is still above ≤ ${(tA*100).toFixed(0)}%. The producer is over-penalized — try <strong>increasing c</strong> (more permissive) or raising n. Watch that β stays acceptable.`;
+      } else {
+        txt += `α = ${(alpha*100).toFixed(2)}% already meets its target (≤ ${(tA*100).toFixed(0)}%), but β = ${(beta*100).toFixed(2)}% is still above ≤ ${(tB*100).toFixed(0)}%. Bad lots slip through too often — try <strong>increasing n</strong> or <strong>lowering c</strong> (stricter). Watch that α stays acceptable.`;
+      }
+    } else if (fmHasAlpha) {
+      txt += aOk
+        ? `Only the producer's risk is evaluated (the problem gives the AQL only). α = ${(alpha*100).toFixed(2)}% <strong>meets the target</strong> (≤ ${(tA*100).toFixed(0)}%) — good lots are rarely rejected. Note: with only the AQL, you cannot judge how well the buyer is protected.`
+        : `Only the producer's risk is evaluated (the problem gives the AQL only). α = ${(alpha*100).toFixed(2)}% is <strong>above target</strong> (≤ ${(tA*100).toFixed(0)}%) — too many good lots rejected. Try <strong>increasing c</strong> or n to bring it down.`;
+    } else {
+      txt += bOk
+        ? `Only the consumer's risk is evaluated (the problem gives the LTPD only). β = ${(beta*100).toFixed(2)}% <strong>meets the target</strong> (≤ ${(tB*100).toFixed(0)}%) — bad lots are rarely accepted. Note: with only the LTPD, you cannot judge how fair the plan is to the producer.`
+        : `Only the consumer's risk is evaluated (the problem gives the LTPD only). β = ${(beta*100).toFixed(2)}% is <strong>above target</strong> (≤ ${(tB*100).toFixed(0)}%) — too many bad lots accepted. Try <strong>increasing n</strong> or <strong>lowering c</strong> to bring it down.`;
+    }
+    document.getElementById('fm-interp').innerHTML = txt;
+
+    // ── Explain WHY the risks moved (compared to the previous adjustment) ──
+    let why = '';
+    if (prevManual) {
+      const dN = n - prevManual.n, dC = c - prevManual.c;
+      const dA = alpha - prevManual.alpha, dB = beta - prevManual.beta;
+      const eps = 0.0005; // ignore tiny numerical noise
+      if (dN !== 0 || dC !== 0) {
+        const causes = [];
+        if (dC !== 0) {
+          if (dC > 0) {
+            causes.push(`You <strong>raised c</strong> (${prevManual.c} → ${c}): the plan now tolerates more defectives before rejecting, so acceptance becomes more likely at every quality level. Result: <strong>α falls</strong> (fewer good lots rejected) but <strong>β rises</strong> (more bad lots accepted).`);
+          } else {
+            causes.push(`You <strong>lowered c</strong> (${prevManual.c} → ${c}): the plan is now stricter, rejecting with fewer defectives, so acceptance becomes less likely everywhere. Result: <strong>β falls</strong> but <strong>α rises</strong>.`);
+          }
+        }
+        if (dN !== 0) {
+          if (dN > 0) {
+            causes.push(`You <strong>increased n</strong> (${prevManual.n} → ${n}) with c fixed: a bigger sample makes the same c proportionally stricter, shifting the curve toward lower acceptance. Result: <strong>β falls</strong> but <strong>α rises</strong>. To push <em>both</em> risks down at once you must raise <strong>c together with n</strong> — that is what makes the OC curve steeper.`);
+          } else {
+            causes.push(`You <strong>decreased n</strong> (${prevManual.n} → ${n}) with c fixed: a smaller sample makes c proportionally more lenient. Result: <strong>α falls</strong> but <strong>β rises</strong>.`);
+          }
+        }
+        const net = `<br><strong>Net effect:</strong> α ${Math.abs(dA)<eps?'barely changed':(dA>0?'rose ↑':'fell ↓')} to ${(alpha*100).toFixed(2)}%, β ${Math.abs(dB)<eps?'barely changed':(dB>0?'rose ↑':'fell ↓')} to ${(beta*100).toFixed(2)}%.`;
+        why = causes.join(' ') + net;
+      }
+    }
+    const whyEl = document.getElementById('fm-why');
+    if (whyEl) whyEl.innerHTML = why
+      ? '<strong>Why the risks moved:</strong> ' + why
+      : 'Adjust <strong>n</strong> or <strong>c</strong> and this box will explain why each risk rises or falls.';
+
+    prevManual = { n, c, alpha, beta };
+  }
+}
+
+function initFindChart() {
+  const ctx = document.getElementById('findChart').getContext('2d');
+  findChart = new Chart(ctx, {
+    type:'line', data:{ datasets:[] },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{duration:200},
+      interaction: { mode: 'nearest', intersect: false, axis: 'x' },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          enabled:true,
+          backgroundColor:'#1a1a18', titleColor:'#fff', bodyColor:'#fff',
+          padding:12, displayColors:false, cornerRadius:8,
+          titleFont:{size:13, weight:'600'}, bodyFont:{size:13},
+          filter: item => item.datasetIndex === 0,
+          callbacks:{
+            title: items => (items && items.length) ? 'p (% defectives) = ' + (+items[0].parsed.x).toFixed(2) + '%' : '',
+            label: items => 'Pa (prob. of acceptance) = ' + (items.parsed.y * 100).toFixed(2) + '%',
+            afterBody: () => {
+              const lines = ['', 'Current plan risks:'];
+              if (fmHasAlpha) lines.push('α (at AQL ' + findStats.aql + '%) = ' + (findStats.alpha * 100).toFixed(2) + '%');
+              if (fmHasBeta)  lines.push('β (at LTPD ' + findStats.ltpd + '%) = ' + (findStats.beta * 100).toFixed(2) + '%');
+              return lines;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{ type:'linear', min:0, max:30, grid:{color:'rgba(0,0,0,0.05)'}, title:{display:true, text:'% Defectives (p)', color:'#9a9a92', font:{size:11}}, ticks:{callback:v=>v+'%', stepSize:5, color:'#9a9a92'} },
+        y:{ min:0, max:1, grid:{color:'rgba(0,0,0,0.05)'}, title:{display:true, text:'Pa', color:'#9a9a92', font:{size:11}}, ticks:{callback:v=>(v*100).toFixed(0)+'%', stepSize:0.1, color:'#9a9a92'} }
+      }
+    },
+    plugins: [hoverLinePlugin]
+  });
+  updateManual();
+}
+
+// Sync find-mode inputs with their sliders (called from number inputs)
+['fm-aql','fm-ltpd'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    const sl = document.getElementById(id + '-sl');
+    if (sl) sl.value = el.value;
+    updateManual();
+  });
+});
+['fa-aql','fa-ltpd','fa-alpha','fa-beta'].forEach(id => {
+  const el = document.getElementById(id);
+  const sl = document.getElementById(id + '-sl');
+  if (el && sl) { el.addEventListener('input', () => sl.value = el.value); sl.addEventListener('input', () => el.value = sl.value); }
+});
+
+
+</script>
+</body>
+</html>

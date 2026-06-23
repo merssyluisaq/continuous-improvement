@@ -1,0 +1,4177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From Data to Root Cause — Continuous Improvement Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#faf6f0;
+    --paper:#ffffff;
+    --ink:#2b2622;
+    --muted:#7a7068;
+    --line:#e6ddd2;
+    --terracotta:#c1622d;
+    --terracotta-light:#f3ddd0;
+    --blue:#3b6e8f;
+    --blue-light:#dbe9f1;
+    --green:#5f8d4e;
+    --green-light:#e6f0e0;
+    --amber:#c98a1b;
+    --amber-light:#faedd2;
+    --red:#bf4040;
+    --red-light:#f8e1e1;
+    --shadow: 0 2px 10px rgba(43,38,34,0.06);
+    --dark:#2b2622;
+    --dark-2:#3a332d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'IBM Plex Sans', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    line-height:1.5;
+    padding:24px;
+  }
+  .wrap{max-width:1100px; margin:0 auto;}
+
+  header.top{
+    background:linear-gradient(135deg, var(--dark) 0%, var(--dark-2) 100%);
+    border:1px solid var(--dark);
+    border-radius:14px;
+    padding:24px 28px;
+    margin-bottom:18px;
+    box-shadow:var(--shadow);
+    color:#fff;
+    position:relative;
+  }
+  .university-tag{
+    position:absolute;
+    top:24px;
+    right:28px;
+    font-size:12px;
+    font-weight:600;
+    color:#cfc6bd;
+    text-align:right;
+    letter-spacing:0.03em;
+  }
+  .professor-tag{
+    margin-top:10px;
+    font-size:12.5px;
+    color:#cfc6bd;
+  }
+  header.top h1{
+    margin:0 0 6px 0;
+    font-size:24px;
+    font-weight:700;
+    letter-spacing:-0.01em;
+    color:#fff;
+  }
+  header.top p{
+    margin:0;
+    color:#cfc6bd;
+    font-size:14px;
+  }
+  .badge-row{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  .badge{
+    font-size:11px;
+    font-weight:600;
+    padding:4px 10px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,0.18);
+    color:#cfc6bd;
+    background:rgba(255,255,255,0.06);
+  }
+  .badge.active{
+    background:var(--terracotta);
+    border-color:var(--terracotta);
+    color:#fff;
+  }
+
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 24px;
+    margin-bottom:18px;
+    box-shadow:var(--shadow);
+  }
+  .card h2{
+    margin:0 0 4px 0;
+    font-size:17px;
+    font-weight:700;
+  }
+  .card .sub{
+    margin:0 0 16px 0;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .phase-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    background:var(--terracotta-light);
+    color:var(--terracotta);
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    padding:4px 12px;
+    border-radius:999px;
+    margin-bottom:10px;
+  }
+
+  /* === Layout: input + chart side by side === */
+  .grid-2{
+    display:grid;
+    grid-template-columns: 320px 1fr;
+    gap:20px;
+  }
+  @media (max-width: 820px){
+    .grid-2{grid-template-columns: 1fr;}
+  }
+
+  /* === Table input === */
+  table.input-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+  }
+  table.input-table th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--muted);
+    padding:6px 8px;
+    border-bottom:2px solid var(--line);
+  }
+  table.input-table td{
+    padding:5px 8px;
+    border-bottom:1px solid var(--line);
+  }
+  table.input-table input[type="text"],
+  table.input-table input[type="number"]{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 8px;
+    font-family:inherit;
+    font-size:13px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  table.input-table input:focus{
+    outline:2px solid var(--blue);
+    outline-offset:1px;
+    background:#fff;
+  }
+  .row-actions{
+    display:flex;
+    gap:6px;
+    margin-top:12px;
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:8px;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:600;
+    transition:transform .05s ease, opacity .15s ease;
+  }
+  button:active{transform:scale(0.97);}
+  .btn-primary{background:var(--terracotta); color:#fff;}
+  .btn-primary:hover{opacity:0.9;}
+  .btn-secondary{background:var(--blue-light); color:var(--blue);}
+  .btn-secondary:hover{opacity:0.85;}
+  .btn-ghost{background:transparent; color:var(--muted); border:1px solid var(--line);}
+  .btn-ghost:hover{background:var(--cream);}
+  .btn-remove{
+    background:var(--red-light);
+    color:var(--red);
+    padding:5px 9px;
+    font-size:12px;
+    border-radius:6px;
+  }
+  .btn-icon{padding:5px 8px; line-height:1;}
+
+  .total-row{
+    margin-top:10px;
+    font-size:13px;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+    padding-top:8px;
+    border-top:1px dashed var(--line);
+  }
+  .total-row strong{color:var(--ink);}
+
+  /* === Chart area === */
+  .chart-wrap{
+    background:var(--cream);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+    min-height:380px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .chart-wrap svg{width:100%; height:auto; max-height:420px;}
+  .empty-state{
+    color:var(--muted);
+    font-size:13px;
+    text-align:center;
+    padding:40px 20px;
+  }
+
+  /* === Legend === */
+  .legend{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-top:10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .legend-item{display:flex; align-items:center; gap:6px;}
+  .legend-swatch{width:14px; height:14px; border-radius:3px; display:inline-block;}
+
+  /* === Question / decision panel === */
+  .decision-box{
+    margin-top:16px;
+    background:var(--blue-light);
+    border:1px solid #c5dbe8;
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .decision-box h3{
+    margin:0 0 8px 0;
+    font-size:14px;
+    font-weight:700;
+    color:var(--blue);
+  }
+  .decision-box p{
+    margin:0 0 12px 0;
+    font-size:13px;
+    color:var(--ink);
+  }
+  select.decision-select{
+    width:100%;
+    max-width:380px;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    font-family:inherit;
+    font-size:13px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .feedback{
+    margin-top:12px;
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:13px;
+    line-height:1.5;
+    display:none;
+  }
+  .feedback.show{display:block;}
+  .feedback.success{background:var(--green-light); border:1px solid #bcdcae; color:#3f5e34;}
+  .feedback.warning{background:var(--amber-light); border:1px solid #f0d49a; color:#7a5611;}
+  .feedback.danger{background:var(--red-light); border:1px solid #edb9b9; color:#7a2c2c;}
+
+  .step-nav{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:16px;
+  }
+  .step-nav button:disabled{
+    opacity:0.4;
+    cursor:not-allowed;
+  }
+
+  .hint{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:8px;
+    font-style:italic;
+  }
+
+  /* === Frequency table (computed) === */
+  table.freq-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    margin-top:14px;
+  }
+  table.freq-table th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--muted);
+    padding:6px 8px;
+    border-bottom:2px solid var(--line);
+  }
+  table.freq-table td{
+    padding:6px 8px;
+    border-bottom:1px solid var(--line);
+  }
+  table.freq-table tr.vital td{
+    background:var(--terracotta-light);
+    font-weight:600;
+  }
+  table.freq-table td.num{
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .chart-actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:8px;
+  }
+
+  footer.future{
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+    padding:20px 0 6px 0;
+  }
+
+  /* === Phase 2: Brainstorming === */
+  .cause-context{
+    background:var(--terracotta-light);
+    border:1px solid #e8c4ab;
+    border-radius:10px;
+    padding:14px 18px;
+    margin-bottom:16px;
+    font-size:13px;
+  }
+  .cause-context strong{color:var(--terracotta);}
+  .cause-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .cause-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .cause-item input[type="text"]{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 12px;
+    font-family:inherit;
+    font-size:13px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  .cause-item input[type="text"]:focus{
+    outline:2px solid var(--blue);
+    outline-offset:1px;
+    background:#fff;
+  }
+
+  /* === Affinity board === */
+  .affinity-board{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap:14px;
+    margin-top:16px;
+  }
+  .affinity-col{
+    background:var(--cream);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px;
+    min-height:90px;
+  }
+  .affinity-col.dragover{
+    border-color:var(--blue);
+    background:var(--blue-light);
+  }
+  .affinity-col h4{
+    margin:0 0 8px 0;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .affinity-col h4 .swatch{
+    width:10px; height:10px; border-radius:3px; display:inline-block;
+  }
+  .affinity-col-label{
+    border:none;
+    background:transparent;
+    font-family:inherit;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--muted);
+    font-weight:600;
+    width:100%;
+    padding:2px 4px;
+    border-radius:4px;
+  }
+  .affinity-col-label:focus{
+    outline:1px solid var(--blue);
+    background:#fff;
+    color:var(--ink);
+  }
+  .affinity-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    font-size:12.5px;
+    margin-bottom:6px;
+    cursor:grab;
+    box-shadow:var(--shadow);
+  }
+  .affinity-card.suggested{
+    border-left:3px solid var(--amber);
+  }
+  .affinity-card .suggestion-tag{
+    display:block;
+    font-size:10px;
+    color:var(--amber);
+    font-weight:600;
+    margin-top:2px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .unsorted-pool{
+    border:2px dashed var(--line);
+  }
+  .unsorted-pool h4{color:var(--terracotta);}
+
+  .progress-tracker{
+    display:flex;
+    gap:6px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .progress-step{
+    font-size:11px;
+    font-weight:600;
+    padding:4px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    color:var(--muted);
+    background:var(--cream);
+  }
+  .progress-step.current{
+    background:var(--terracotta);
+    border-color:var(--terracotta);
+    color:#fff;
+  }
+  .progress-step.done{
+    background:var(--green-light);
+    border-color:#bcdcae;
+    color:#3f5e34;
+  }
+
+  /* === Phase 3: Ishikawa diagram === */
+  .bone-controls{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .bone-control-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:5px 10px 5px 8px;
+    font-size:12px;
+  }
+  .bone-control-item.disabled{
+    opacity:0.5;
+  }
+  .bone-control-item input[type="checkbox"]{
+    width:14px; height:14px; cursor:pointer;
+  }
+  .bone-control-item input[type="text"]{
+    border:none;
+    background:transparent;
+    font-family:inherit;
+    font-size:12px;
+    font-weight:600;
+    width:90px;
+    padding:2px 4px;
+    border-radius:4px;
+  }
+  .bone-control-item input[type="text"]:focus{
+    outline:1px solid var(--blue);
+    background:var(--cream);
+  }
+  .bone-control-item .swatch{
+    width:10px; height:10px; border-radius:3px; display:inline-block; flex-shrink:0;
+  }
+
+  .ishikawa-wrap{
+    background:var(--cream);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+    overflow:auto;
+    max-height:80vh;
+  }
+  .ishikawa-wrap svg{display:block; margin:0 auto; max-width:none;}
+  .ishikawa-edit-panel{
+    margin-top:18px;
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap:14px;
+  }
+  .ishikawa-cat-block{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+  }
+  .ishikawa-cat-block h4{
+    margin:0 0 8px 0;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .ishikawa-cat-block h4 .swatch{
+    width:10px; height:10px; border-radius:3px; display:inline-block;
+  }
+  .ishikawa-cause-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .ishikawa-cause-row input[type="text"]{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 8px;
+    font-family:inherit;
+    font-size:12.5px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  .ishikawa-cause-row input[type="text"]:focus{
+    outline:2px solid var(--blue);
+    outline-offset:1px;
+    background:#fff;
+  }
+  .ishikawa-cause-row select{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:5px 6px;
+    font-family:inherit;
+    font-size:11px;
+    background:#fff;
+    color:var(--ink);
+    max-width:96px;
+  }
+  .add-cause-mini{
+    background:var(--blue-light);
+    color:var(--blue);
+    border:none;
+    border-radius:6px;
+    padding:5px 10px;
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+    width:100%;
+    margin-top:2px;
+  }
+  .add-cause-mini:hover{opacity:0.85;}
+
+  /* === Phase 4: 5 Whys === */
+  .whys-example{
+    background:var(--blue-light);
+    border:1px solid #c5dbe8;
+    border-radius:10px;
+    padding:14px 18px;
+    margin-bottom:18px;
+    font-size:13px;
+  }
+  .whys-example h4{
+    margin:0 0 8px 0;
+    font-size:13px;
+    color:var(--blue);
+    font-weight:700;
+  }
+  .whys-chain{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .whys-chain-row{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+  }
+  .whys-chain-row .why-label{
+    font-weight:700;
+    color:var(--blue);
+    min-width:80px;
+    font-size:12px;
+    padding-top:2px;
+  }
+  .whys-chain-row .why-text{
+    flex:1;
+    font-size:13px;
+  }
+  .whys-chain-row .why-arrow{
+    color:var(--muted);
+    font-size:12px;
+    padding-left:88px;
+  }
+  .whys-root-tag{
+    display:inline-block;
+    margin-top:6px;
+    background:var(--terracotta);
+    color:#fff;
+    font-size:11px;
+    font-weight:700;
+    padding:3px 10px;
+    border-radius:999px;
+  }
+
+  .cause-whys-block{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:14px;
+  }
+  .cause-whys-block .cause-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+    cursor:pointer;
+  }
+  .cause-whys-block .cause-header .cat-swatch{
+    width:10px; height:10px; border-radius:3px; display:inline-block; flex-shrink:0;
+  }
+  .cause-whys-block .cause-header .cause-title{
+    font-weight:600;
+    font-size:13.5px;
+    flex:1;
+  }
+  .cause-whys-block .cause-header .cat-label{
+    font-size:11px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .cause-whys-block .toggle-icon{
+    font-size:12px;
+    color:var(--muted);
+    transition:transform .15s ease;
+  }
+  .cause-whys-block.collapsed .toggle-icon{transform:rotate(-90deg);}
+  .cause-whys-block.collapsed .whys-body{display:none;}
+
+  .why-input-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .why-input-row .why-label{
+    font-weight:700;
+    color:var(--terracotta);
+    min-width:80px;
+    font-size:12px;
+  }
+  .why-input-row input[type="text"]{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    font-family:inherit;
+    font-size:13px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  .why-input-row input[type="text"]:focus{
+    outline:2px solid var(--blue);
+    outline-offset:1px;
+    background:#fff;
+  }
+  .why-input-row input[type="checkbox"]{
+    width:16px; height:16px; flex-shrink:0;
+  }
+  .root-cause-label{
+    font-size:11px;
+    color:var(--muted);
+    margin-left:88px;
+  }
+
+  .completion-summary{
+    background:var(--green-light);
+    border:1px solid #bcdcae;
+    border-radius:10px;
+    padding:12px 16px;
+    font-size:13px;
+    margin-top:6px;
+  }
+
+  /* === Path choice (Ishikawa and/or 5 Whys) === */
+  .path-choice-option{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .path-choice-option:hover{
+    border-color:var(--blue);
+    background:var(--blue-light);
+  }
+  .path-choice-option input[type="checkbox"]{
+    width:18px; height:18px; margin-top:2px; flex-shrink:0; cursor:pointer;
+  }
+  .path-choice-option .path-title{
+    font-weight:700;
+    font-size:14px;
+    margin-bottom:2px;
+  }
+  .path-choice-option .path-desc{
+    font-size:12.5px;
+    color:var(--muted);
+  }
+
+  /* === Phase 5: Validation table === */
+  /* === Phase 5: Validation checklist cards === */
+  .val-cause-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px 20px;
+    margin-bottom:18px;
+    box-shadow:var(--shadow);
+  }
+  .val-cause-title{
+    font-size:14px;
+    font-weight:700;
+    margin:0 0 4px 0;
+    color:var(--ink);
+  }
+  .val-cause-path{
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:14px;
+  }
+  .val-checklist{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .val-check-item{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--cream);
+    font-size:13px;
+  }
+  .val-check-item .check-question{flex:1; line-height:1.4;}
+  .val-check-item .check-btns{
+    display:flex;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .check-btn{
+    font-family:inherit;
+    font-size:12px;
+    font-weight:600;
+    padding:5px 12px;
+    border-radius:6px;
+    border:1px solid var(--line);
+    cursor:pointer;
+    background:var(--paper);
+    color:var(--muted);
+    transition:all .1s;
+  }
+  .check-btn.active-yes{
+    background:var(--green-light);
+    border-color:#bcdcae;
+    color:#3f5e34;
+  }
+  .check-btn.active-no{
+    background:var(--red-light);
+    border-color:#edb9b9;
+    color:#7a2c2c;
+  }
+  .val-evidence{
+    margin-top:10px;
+  }
+  .val-evidence label{
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    display:block;
+    margin-bottom:4px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .val-evidence textarea{
+    width:100%;
+    min-height:54px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:8px 10px;
+    font-family:inherit;
+    font-size:13px;
+    background:#fff;
+    color:var(--ink);
+    resize:vertical;
+  }
+  .val-verdict{
+    margin-top:12px;
+    padding:10px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .val-verdict.v-validated{background:var(--green-light); color:#3f5e34; border:1px solid #bcdcae;}
+  .val-verdict.v-partial{background:var(--amber-light); color:#7a5611; border:1px solid #f0d49a;}
+  .val-verdict.v-invalid{background:var(--red-light); color:#7a2c2c; border:1px solid #edb9b9;}
+  .val-verdict.v-pending{background:var(--cream); color:var(--muted); border:1px solid var(--line);}
+
+  table.validation-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    margin-bottom:18px;
+  }
+  table.validation-table th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--muted);
+    padding:8px;
+    border-bottom:2px solid var(--line);
+  }
+  table.validation-table td{
+    padding:8px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  table.validation-table td.root-cause-cell{
+    font-weight:600;
+    width:22%;
+  }
+  table.validation-table textarea{
+    width:100%;
+    min-height:54px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 8px;
+    font-family:inherit;
+    font-size:12.5px;
+    background:var(--cream);
+    color:var(--ink);
+    resize:vertical;
+  }
+  table.validation-table textarea:focus{
+    outline:2px solid var(--blue);
+    outline-offset:1px;
+    background:#fff;
+  }
+  table.validation-table select{
+    width:100%;
+    padding:6px 8px;
+    border-radius:6px;
+    border:1px solid var(--line);
+    font-family:inherit;
+    font-size:12.5px;
+    background:#fff;
+    color:var(--ink);
+  }
+  td.validated-yes select{border-color:#bcdcae; background:var(--green-light);}
+  td.validated-no select{border-color:#edb9b9; background:var(--red-light);}
+  td.validated-pending select{border-color:var(--line);}
+
+  /* === Phase 5: Impact/Effort matrix === */
+  .matrix-wrap{
+    background:var(--cream);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:16px;
+  }
+  table.action-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  table.action-table th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--muted);
+    padding:8px;
+    border-bottom:2px solid var(--line);
+  }
+  table.action-table td{
+    padding:8px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  table.action-table input[type="text"]{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:6px 8px;
+    font-family:inherit;
+    font-size:12.5px;
+    background:var(--cream);
+    color:var(--ink);
+  }
+  table.action-table input[type="text"]:focus{
+    outline:2px solid var(--blue);
+    outline-offset:1px;
+    background:#fff;
+  }
+  table.action-table select{
+    width:100%;
+    padding:6px 8px;
+    border-radius:6px;
+    border:1px solid var(--line);
+    font-family:inherit;
+    font-size:12.5px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .quick-win-tag{
+    background:var(--green-light);
+    color:#3f5e34;
+    border:1px solid #bcdcae;
+    font-size:11px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .major-tag{
+    background:var(--amber-light);
+    color:#7a5611;
+    border:1px solid #f0d49a;
+    font-size:11px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .fillin-tag{
+    background:var(--blue-light);
+    color:var(--blue);
+    border:1px solid #c5dbe8;
+    font-size:11px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .thankless-tag{
+    background:var(--red-light);
+    color:#7a2c2c;
+    border:1px solid #edb9b9;
+    font-size:11px;
+    font-weight:700;
+    padding:3px 8px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+
+  .quadrant-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap:8px;
+    margin-top:12px;
+  }
+  .quadrant-grid-4{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:8px;
+    margin-top:8px;
+  }
+  @media (max-width: 800px) {
+    .quadrant-grid-4{ grid-template-columns: 1fr 1fr; }
+  }
+  .quadrant-cell{
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:12px;
+    min-height:70px;
+  }
+  .quadrant-cell h5{
+    margin:0 0 4px 0;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .quadrant-cell ul{
+    margin:0;
+    padding-left:16px;
+  }
+  .quadrant-cell.q-quickwin{background:var(--green-light); border:1px solid #bcdcae;}
+  .quadrant-cell.q-major{background:var(--amber-light); border:1px solid #f0d49a;}
+  .quadrant-cell.q-fillin{background:var(--blue-light); border:1px solid #c5dbe8;}
+  .quadrant-cell.q-thankless{background:var(--red-light); border:1px solid #edb9b9;}
+
+  .final-summary{
+    background:var(--dark);
+    color:#fff;
+    border-radius:14px;
+    padding:24px 28px;
+    text-align:center;
+    margin-top:18px;
+  }
+  .final-summary h2{
+    color:#fff;
+    margin:0 0 8px 0;
+  }
+  .final-summary p{
+    color:#cfc6bd;
+    margin:0;
+    font-size:14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="top">
+    <div class="university-tag">Universidad de Lima</div>
+    <h1>A Continuous Improvement Simulator</h1>
+    <p>From Data to Root Cause: Pareto → Affinity → Ishikawa → 5 Whys → Validation → Action</p>
+    <div class="professor-tag">Professor: Merssy Luisa Quispe Velásquez</div>
+    <div class="badge-row" id="phaseBadges">
+      <span class="badge active" data-phase="1">1 · Pareto</span>
+      <span class="badge" data-phase="2">2 · Affinity</span>
+      <span class="badge" data-phase="3">3 · Ishikawa</span>
+      <span class="badge" data-phase="4">4 · 5 Whys</span>
+      <span class="badge" data-phase="5">5 · Validation</span>
+      <span class="badge" data-phase="6">6 · Action</span>
+    </div>
+  </header>
+
+  <!-- ============ PHASE 1: PROBLEM DATA ============ -->
+  <section class="card">
+    <span class="phase-pill">Phase 1 · Define the problem</span>
+    <h2>Defect frequency table</h2>
+    <p class="sub">Enter the defect categories observed and how often each one occurred. This data will drive the Pareto analysis.</p>
+
+    <div class="grid-2">
+      <div>
+        <table class="input-table" id="dataTable">
+          <thead>
+            <tr><th>Problem / Defect</th><th style="width:80px;">Freq.</th><th style="width:36px;"></th></tr>
+          </thead>
+          <tbody id="dataRows"></tbody>
+        </table>
+        <div class="row-actions">
+          <button class="btn-secondary" id="addRowBtn">+ Add row</button>
+          <button class="btn-ghost" id="loadExampleBtn">Load example</button>
+          <button class="btn-ghost" id="clearBtn">Clear</button>
+        </div>
+        <div class="total-row">
+          <span>Total defects</span>
+          <strong id="totalCount">0</strong>
+        </div>
+      </div>
+
+      <div>
+        <div class="chart-wrap" id="chartWrap">
+          <div class="empty-state">Add at least 2 defect categories to generate the Pareto chart.</div>
+        </div>
+        <div class="legend" id="legendRow" style="display:none;">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--terracotta);"></span> Frequency (bars)</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--blue);"></span> Cumulative %</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--muted); height:2px; width:14px; border-radius:0;"></span> 80% line</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--amber);"></span> "Vital few" (~80%)</div>
+        </div>
+        <div class="chart-actions" id="chartActions" style="display:none;">
+          <button class="btn-ghost" id="downloadChartBtn">⬇ Download Pareto chart</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="freqTableWrap" style="display:none;">
+      <h2 style="margin-top:20px;">Frequency table</h2>
+      <p class="sub">Computed automatically from your input data.</p>
+      <table class="freq-table" id="freqTable">
+        <thead>
+          <tr>
+            <th>Problem / Defect</th>
+            <th style="text-align:right;">Frequency</th>
+            <th style="text-align:right;">% of total</th>
+            <th style="text-align:right;">Cumulative %</th>
+          </tr>
+        </thead>
+        <tbody id="freqTableBody"></tbody>
+      </table>
+      <p class="hint">Highlighted rows represent the "vital few" categories that account for approximately 80% of total defects.</p>
+      <div class="chart-actions">
+        <button class="btn-ghost" id="downloadFreqTableBtn">⬇ Download frequency table</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PHASE 1B: DECISION QUESTION ============ -->
+  <section class="card" id="decisionCard" style="display:none;">
+    <span class="phase-pill">Phase 1 · Interpretation</span>
+    <h2>Which problem should be prioritized?</h2>
+    <div class="decision-box">
+      <h3>Apply the 80/20 rule</h3>
+      <p>Based on the Pareto chart and frequency table above, which defect category (or categories) represent the "vital few" that account for roughly 80% of total defects? Select all the categories your team should tackle first.</p>
+      <div id="priorityOptions"></div>
+      <div class="feedback" id="priorityFeedback"></div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-primary" id="continueBtn" disabled>Continue to Phase 2 · Affinity →</button>
+    </div>
+  </section>
+
+  <footer class="future">Phases 3–6 (Ishikawa, 5 Whys, Validation, Action Matrix) coming next.</footer>
+
+  <!-- ============ PHASE 2: BRAINSTORMING + AFFINITY ============ -->
+  <section class="card" id="phase2Card" style="display:none;">
+    <span class="phase-pill">Phase 2 · Brainstorming &amp; Affinity Diagram</span>
+    <h2>Identify possible causes</h2>
+    <p class="sub">For each priority defect (starting with the one that occurs most often), brainstorm every possible cause you can think of. Then sort each cause into the 6M category where it belongs.</p>
+
+    <div class="progress-tracker" id="phase2Progress"></div>
+
+    <div class="cause-context" id="causeContext"></div>
+
+    <h3 style="font-size:14px; margin:0 0 8px 0;">Step A · Brainstorm causes</h3>
+    <div class="cause-list" id="causeList"></div>
+    <div class="row-actions">
+      <button class="btn-secondary" id="addCauseBtn">+ Add cause</button>
+      <button class="btn-primary" id="buildAffinityBtn">Build affinity board →</button>
+    </div>
+
+    <div id="affinitySection" style="display:none;">
+      <h3 style="font-size:14px; margin:24px 0 4px 0;">Step B · Sort causes into the affinity diagram</h3>
+      <p class="sub">Drag each cause into the 6M category you think it belongs to. Causes with a suggested category are marked — you decide whether to follow the suggestion.</p>
+      <div class="affinity-board" id="affinityBoard"></div>
+      <div class="step-nav">
+        <button class="btn-ghost" id="backToBrainstormBtn">← Back to brainstorming</button>
+        <button class="btn-primary" id="phase2ContinueBtn" disabled>Continue →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PATH CHOICE: ISHIKAWA AND/OR 5 WHYS ============ -->
+  <section class="card" id="pathChoiceCard" style="display:none;">
+    <span class="phase-pill">Choose your path to the root cause</span>
+    <h2>How do you want to dig deeper?</h2>
+    <p class="sub">Both tools are valid ways to get from your affinity groups to a root cause. You can do either one, or both — if you check both, you'll do the Ishikawa diagram first, then the 5 Whys.</p>
+
+    <div id="pathChoiceOptions" style="display:flex; flex-direction:column; gap:10px; margin:14px 0;"></div>
+
+    <div class="step-nav">
+      <button class="btn-primary" id="pathChoiceContinueBtn" disabled>Continue →</button>
+    </div>
+
+    <div id="pathChoiceSummary" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); font-size:13px; color:var(--muted);">
+      <span id="pathChoiceSummaryText"></span>
+      <button class="btn-ghost" id="pathChoiceChangeBtn" style="margin-left:10px;">Change</button>
+    </div>
+  </section>
+
+  <!-- ============ PHASE 3: ISHIKAWA DIAGRAM ============ -->
+  <section class="card" id="phase3Card" style="display:none;">
+    <span class="phase-pill">Phase 3 · Cause &amp; Effect (Ishikawa) Diagram</span>
+    <h2>Build the fishbone diagram</h2>
+    <p class="sub">The causes you sorted in Phase 2 are now placed on the diagram. Edit, move, add, or remove causes as needed — then move on to the next priority defect.</p>
+
+    <div class="progress-tracker" id="phase3Progress"></div>
+
+    <div class="bone-controls" id="boneControls"></div>
+
+    <div class="ishikawa-wrap" id="ishikawaWrap" style="position:relative;"></div>
+    <div class="cause-context" style="margin-top:0;">
+      <strong>3-level structure:</strong> <strong style="color:var(--blue);">L1 · Cause</strong> → the main cause branch attached to the bone (e.g. "Machine overheats") · <strong style="color:var(--muted);">L2 · Sub-cause</strong> → why that cause happens (e.g. "Technician is slow") · <strong style="color:#bf4040;">L3 · Root cause ★</strong> → the deepest reason, shown in red (e.g. "Only one technician"). Use the edit panel below to add levels. <br><br>
+      <strong>Interactions:</strong> drag any label to reposition it (the connecting arrow follows). Click once to select (orange), then click another bone to move it there. Double-click to edit text. Drag the small circle at a bone's base to slide the bone left/right.
+    </div>
+    <div class="row-actions" style="margin-top:10px;">
+      <button class="btn-ghost" id="downloadIshikawaBtn">⬇ Download diagram</button>
+    </div>
+
+    <div class="ishikawa-edit-panel" id="ishikawaEditPanel"></div>
+
+    <div class="step-nav">
+      <button class="btn-primary" id="phase3ContinueBtn">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ============ PHASE 4: 5 WHYS ============ -->
+  <section class="card" id="phase4Card" style="display:none;">
+    <span class="phase-pill">Phase 4 · The 5 Whys</span>
+    <h2>Drill down to the root cause</h2>
+    <p class="sub">Finding a cause is not the same as finding the <em>root</em> cause. For each cause on your fishbone diagram, ask "Why?" up to five times until you reach something that, if fixed, would prevent the problem from recurring.</p>
+
+    <div class="whys-example">
+      <h4>Worked example</h4>
+      <div class="whys-chain">
+        <div class="whys-chain-row"><span class="why-label">Cause</span><span class="why-text">Worn cutting tool (Machine)</span></div>
+        <div class="whys-chain-row"><span class="why-label">Why? (1)</span><span class="why-text">It is not replaced on time</span></div>
+        <div class="whys-chain-row"><span class="why-label">Why? (2)</span><span class="why-text">There is no preventive maintenance plan</span></div>
+        <div class="whys-chain-row"><span class="why-label">Why? (3)</span><span class="why-text">Tool life is not monitored</span></div>
+        <div class="whys-chain-row"><span class="why-label">Why? (4)</span><span class="why-text">No indicator exists for tool wear</span></div>
+        <div class="whys-chain-row"><span class="why-label">Why? (5)</span><span class="why-text">Maintenance works reactively, not proactively</span></div>
+      </div>
+      <span class="whys-root-tag">🎯 Candidate root cause</span>
+    </div>
+
+    <div class="progress-tracker" id="phase4Progress"></div>
+    <div class="cause-context" id="phase4Context"></div>
+
+    <div id="phase4CausesList"></div>
+
+    <div class="row-actions" style="margin-top:10px; margin-bottom:4px;">
+      <button class="btn-secondary" id="showWhysDiagramBtn">📊 View 5 Whys diagram</button>
+      <button class="btn-ghost" id="downloadWhysDiagramBtn" style="display:none;">⬇ Download diagram</button>
+    </div>
+    <div id="whysDiagramWrap" style="display:none; margin-top:12px; overflow-x:auto; overflow-y:hidden; padding-bottom:8px;"></div>
+
+    <div class="step-nav">
+      <button class="btn-primary" id="phase4ContinueBtn">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ============ PHASE 5: VALIDATION + ACTION PRIORITIZATION ============ -->
+  <section class="card" id="phase5Card" style="display:none;">
+    <span class="phase-pill">Phase 5 · Validation</span>
+    <h2>Validate your candidate root causes</h2>
+    <p class="sub">Finding a root cause is not the same as proving it. For each candidate root cause, answer the 5 validation questions — the more "Yes" answers, the stronger the evidence that this is the true root cause.</p>
+
+    <div class="progress-tracker" id="phase5Progress"></div>
+    <div class="cause-context" id="phase5Context"></div>
+
+    <div id="phase5ValidationWrap"></div>
+
+    <h2 style="margin-top:24px;">Prioritize corrective actions</h2>
+    <p class="sub">For each validated root cause, propose a corrective action and rate its impact and effort. Quick Wins (high impact, low effort) should usually go first.</p>
+
+    <div class="matrix-wrap">
+      <div id="phase5ActionTableWrap"></div>
+      <div class="quadrant-grid" id="phase5QuadrantGrid"></div>
+    </div>
+
+    <div class="step-nav">
+      <button class="btn-primary" id="phase5ContinueBtn">Continue →</button>
+    </div>
+  </section>
+
+  <!-- ============ FINAL SUMMARY ============ -->
+  <section class="card" id="finalSummary" style="display:none;">
+    <span class="phase-pill" style="background:var(--green-light); color:#3f5e34; border:1px solid #bcdcae;">Complete</span>
+    <h2>🏆 Improvement Cycle Summary</h2>
+    <p class="sub">Full process completed: Pareto → Affinity → Ishikawa → 5 Whys → Validation → Action Plan</p>
+
+    <div id="finalSummaryContent"></div>
+
+    <div class="row-actions" style="margin-top:16px;">
+      <button class="btn-secondary" id="downloadSummaryBtn">⬇ Download summary</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let defects = []; // {id, name, freq}
+let idCounter = 0;
+let selectedPriorities = [];
+
+// Phase 2 state
+let phase2Queue = [];      // ordered list of defect names to process (vital few, by frequency desc)
+let phase2Index = 0;       // which defect in the queue we're currently on
+let causes = [];           // {id, text} for current defect's brainstorm list
+let causeIdCounter = 0;
+let affinityAssignments = {}; // causeId -> category id (or null if unsorted)
+let phase2Results = {};    // defectName -> { causes: [...], assignments: {...} }
+
+// Phase 3 state
+let phase3Index = 0;
+let ishikawaData = {}; // defectName -> { machine: [{id,text}], method: [...], ... , unsorted: [...] }
+let ishikawaCauseIdCounter = 100000;
+let boneConfig = {}; // defectName -> [{id, label, color, enabled}, ...] (copy of SIX_M, customizable)
+let currentBoneLines = []; // [{x1,y1,x2,y2}] — bone segment coords for collision avoidance during drag
+
+function getBoneConfig(defectName) {
+  if (!boneConfig[defectName]) {
+    boneConfig[defectName] = SIX_M.map(c => ({ ...c, enabled: true }));
+  }
+  return boneConfig[defectName];
+}
+
+function getEnabledBones(defectName) {
+  return getBoneConfig(defectName).filter(c => c.enabled);
+}
+
+// Phase 4 state
+let phase4Index = 0; // index into phase2Queue (defects)
+let whysData = {}; // defectName -> { causeId -> { text, path, category, tree: [{id,text,children:[],rootChecked}] } }
+let whysNodeCounter = 200000;
+
+// Phase 5 state
+let phase5Index = 0; // index into phase2Queue (defects)
+let validationData = {}; // defectName -> { causeId -> { evidence, data, validated } }
+
+// Path choice state (per defect): which root-cause tools the student wants to use
+let pathChoice = {}; // defectName -> { ishikawa: bool, whys: bool, whysSourceIsAffinity: bool }
+let actionData = {}; // defectName -> { causeId -> { action, impact, effort } }
+
+const SIX_M = [
+  { id: "machine",     label: "Machine",     color: "#3b6e8f" },
+  { id: "method",      label: "Method",      color: "#8b5cf6" },
+  { id: "material",    label: "Material",    color: "#06b6d4" },
+  { id: "manpower",    label: "Manpower",    color: "#c98a1b" },
+  { id: "measurement", label: "Measurement", color: "#5f8d4e" },
+  { id: "environment", label: "Environment", color: "#bf4040" },
+];
+
+// Keyword hints for category suggestions (not auto-assignment — just a hint)
+const CATEGORY_HINTS = {
+  machine: ["machine", "tool", "equipment", "calibrat", "wear", "worn", "fixture", "die", "mold"],
+  method: ["method", "procedure", "process", "instruction", "spec", "setting", "parameter", "sop"],
+  material: ["material", "raw", "supplier", "batch", "lot", "component", "part variability"],
+  manpower: ["operator", "worker", "training", "new employee", "staff", "skill", "fatigue", "shift"],
+  measurement: ["measurement", "gauge", "gage", "instrument", "inspection", "sensor", "reading"],
+  environment: ["temperature", "humidity", "environment", "dust", "lighting", "vibration", "noise"],
+};
+
+const EXAMPLE_DATA = [
+  { name: "Scratches", freq: 45 },
+  { name: "Dimension out of tolerance", freq: 30 },
+  { name: "Stains", freq: 18 },
+  { name: "Burrs", freq: 12 },
+  { name: "Color mismatch", freq: 8 },
+  { name: "Missing labels", freq: 5 },
+  { name: "Cracks", freq: 3 },
+];
+
+// ============================================================
+// DOM REFS
+// ============================================================
+const dataRows = document.getElementById('dataRows');
+const totalCountEl = document.getElementById('totalCount');
+const chartWrap = document.getElementById('chartWrap');
+const legendRow = document.getElementById('legendRow');
+const chartActions = document.getElementById('chartActions');
+const downloadChartBtn = document.getElementById('downloadChartBtn');
+const freqTableWrap = document.getElementById('freqTableWrap');
+const freqTableBody = document.getElementById('freqTableBody');
+const decisionCard = document.getElementById('decisionCard');
+const priorityOptions = document.getElementById('priorityOptions');
+const priorityFeedback = document.getElementById('priorityFeedback');
+const continueBtn = document.getElementById('continueBtn');
+
+// Phase 2 DOM refs
+const phase2Card = document.getElementById('phase2Card');
+const phase2Progress = document.getElementById('phase2Progress');
+const causeContext = document.getElementById('causeContext');
+const causeList = document.getElementById('causeList');
+const addCauseBtn = document.getElementById('addCauseBtn');
+const buildAffinityBtn = document.getElementById('buildAffinityBtn');
+const affinitySection = document.getElementById('affinitySection');
+const affinityBoard = document.getElementById('affinityBoard');
+const backToBrainstormBtn = document.getElementById('backToBrainstormBtn');
+const phase2ContinueBtn = document.getElementById('phase2ContinueBtn');
+
+// Path choice DOM refs
+const pathChoiceCard = document.getElementById('pathChoiceCard');
+const pathChoiceOptions = document.getElementById('pathChoiceOptions');
+const pathChoiceContinueBtn = document.getElementById('pathChoiceContinueBtn');
+const pathChoiceSummary = document.getElementById('pathChoiceSummary');
+const pathChoiceSummaryText = document.getElementById('pathChoiceSummaryText');
+const pathChoiceChangeBtn = document.getElementById('pathChoiceChangeBtn');
+const pathChoiceOptionsWrap = pathChoiceOptions; // alias for clarity below
+const pathChoiceContinueWrap = () => pathChoiceContinueBtn.closest('.step-nav');
+
+// Phase 3 DOM refs
+const phase3Card = document.getElementById('phase3Card');
+const phase3Progress = document.getElementById('phase3Progress');
+const ishikawaWrap = document.getElementById('ishikawaWrap');
+const boneControls = document.getElementById('boneControls');
+const ishikawaEditPanel = document.getElementById('ishikawaEditPanel');
+const downloadIshikawaBtn = document.getElementById('downloadIshikawaBtn');
+const phase3ContinueBtn = document.getElementById('phase3ContinueBtn');
+
+// Phase 4 DOM refs
+const phase4Card = document.getElementById('phase4Card');
+const phase4Progress = document.getElementById('phase4Progress');
+const phase4Context = document.getElementById('phase4Context');
+const phase4CausesList = document.getElementById('phase4CausesList');
+const phase4ContinueBtn = document.getElementById('phase4ContinueBtn');
+const showWhysDiagramBtn = document.getElementById('showWhysDiagramBtn');
+const downloadWhysDiagramBtn = document.getElementById('downloadWhysDiagramBtn');
+const whysDiagramWrap = document.getElementById('whysDiagramWrap');
+
+// Phase 5 DOM refs
+const phase5Card = document.getElementById('phase5Card');
+const phase5Progress = document.getElementById('phase5Progress');
+const phase5Context = document.getElementById('phase5Context');
+const phase5ValidationWrap = document.getElementById('phase5ValidationWrap');
+const phase5ActionTableWrap = document.getElementById('phase5ActionTableWrap');
+const phase5QuadrantGrid = document.getElementById('phase5QuadrantGrid');
+const phase5ContinueBtn = document.getElementById('phase5ContinueBtn');
+const finalSummary = document.getElementById('finalSummary');
+const finalSummaryContent = document.getElementById('finalSummaryContent');
+const downloadSummaryBtn = document.getElementById('downloadSummaryBtn');
+
+// ============================================================
+// ROW MANAGEMENT
+// ============================================================
+function addRow(name = '', freq = '') {
+  const id = idCounter++;
+  defects.push({ id, name, freq: freq === '' ? '' : Number(freq) });
+  renderTable();
+}
+
+function removeRow(id) {
+  defects = defects.filter(d => d.id !== id);
+  renderTable();
+}
+
+function updateRow(id, field, value) {
+  const row = defects.find(d => d.id === id);
+  if (!row) return;
+  if (field === 'freq') {
+    row.freq = value === '' ? '' : Math.max(0, Number(value));
+    renderChart();
+    updateTotalDisplay();
+  } else {
+    row.name = value;
+    // Don't re-render the table — that would destroy focus mid-typing
+  }
+}
+
+function updateTotalDisplay() {
+  const total = defects.reduce((s, d) => s + (Number(d.freq) || 0), 0);
+  const totalEl = document.getElementById('totalCount');
+  if (totalEl) totalEl.textContent = total;
+}
+
+function renderTable() {
+  dataRows.innerHTML = '';
+  defects.forEach(d => {
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    const inputName = document.createElement('input');
+    inputName.type = 'text';
+    inputName.placeholder = 'e.g. Scratches';
+    inputName.value = d.name;
+    inputName.addEventListener('input', e => updateRow(d.id, 'name', e.target.value));
+    inputName.addEventListener('blur', () => renderChart()); // refresh chart when done typing name
+    tdName.appendChild(inputName);
+
+    const tdFreq = document.createElement('td');
+    const inputFreq = document.createElement('input');
+    inputFreq.type = 'number';
+    inputFreq.min = '0';
+    inputFreq.placeholder = '0';
+    inputFreq.value = d.freq;
+    inputFreq.addEventListener('input', e => updateRow(d.id, 'freq', e.target.value));
+    tdFreq.appendChild(inputFreq);
+
+    const tdRemove = document.createElement('td');
+    const btnRemove = document.createElement('button');
+    btnRemove.className = 'btn-remove';
+    btnRemove.textContent = '✕';
+    btnRemove.title = 'Remove row';
+    btnRemove.addEventListener('click', () => removeRow(d.id));
+    tdRemove.appendChild(btnRemove);
+
+    tr.appendChild(tdName);
+    tr.appendChild(tdFreq);
+    tr.appendChild(tdRemove);
+    dataRows.appendChild(tr);
+  });
+
+  updateTotals();
+  renderChart();
+}
+
+function updateTotals() {
+  const total = defects.reduce((sum, d) => sum + (Number(d.freq) || 0), 0);
+  totalCountEl.textContent = total;
+}
+
+// ============================================================
+// PARETO CALCULATION
+// ============================================================
+function getValidDefects() {
+  return defects.filter(d => d.name.trim() !== '' && Number(d.freq) > 0);
+}
+
+function buildPareto(data) {
+  const sorted = [...data].sort((a, b) => b.freq - a.freq);
+  const total = sorted.reduce((s, d) => s + d.freq, 0);
+  let cumulative = 0;
+  const result = sorted.map(d => {
+    cumulative += d.freq;
+    return {
+      name: d.name,
+      freq: d.freq,
+      pct: (d.freq / total) * 100,
+      cumPct: (cumulative / total) * 100,
+    };
+  });
+  flagVitalFew(result);
+  return result;
+}
+
+// Flag the "vital few" categories: walk down the sorted list and mark
+// categories as "vital" until cumulative % reaches the target (80%).
+// Tolerance allows one more category to be included if it's needed to
+// get close to the target without overshooting too far.
+function flagVitalFew(pareto, target = 80, tolerance = 15) {
+  pareto.forEach((d, i) => {
+    const prevCum = i === 0 ? 0 : pareto[i - 1].cumPct;
+    if (prevCum < target) {
+      // Include this category if it's needed to reach the target,
+      // or if including it doesn't overshoot beyond target+tolerance
+      d.vital = true;
+    } else {
+      d.vital = false;
+    }
+  });
+}
+
+
+// ============================================================
+// SVG CHART RENDERING
+// ============================================================
+function renderChart() {
+  const valid = getValidDefects();
+
+  if (valid.length < 2) {
+    chartWrap.innerHTML = '<div class="empty-state">Add at least 2 defect categories with a frequency greater than 0 to generate the Pareto chart.</div>';
+    legendRow.style.display = 'none';
+    chartActions.style.display = 'none';
+    freqTableWrap.style.display = 'none';
+    decisionCard.style.display = 'none';
+    return;
+  }
+
+  legendRow.style.display = 'flex';
+  decisionCard.style.display = 'block';
+
+  const pareto = buildPareto(valid);
+
+  // --- SVG geometry ---
+  const W = 760, H = 400;
+  const marginLeft = 60, marginRight = 60, marginTop = 30, marginBottom = 90;
+  const plotW = W - marginLeft - marginRight;
+  const plotH = H - marginTop - marginBottom;
+
+  const n = pareto.length;
+  const barSlot = plotW / n;
+  const barWidth = Math.min(60, barSlot * 0.55);
+
+  const maxFreq = pareto[0].freq;
+  // round up max for nicer axis
+  const yMaxFreq = Math.ceil(maxFreq / 10) * 10 * 1.1;
+
+  const xPos = i => marginLeft + barSlot * i + (barSlot - barWidth) / 2;
+  const yFreq = v => marginTop + plotH - (v / yMaxFreq) * plotH;
+  const yPct = p => marginTop + plotH - (p / 100) * plotH;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, sans-serif">`;
+  svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"/>`;
+
+  // Y axis left (frequency) gridlines
+  const ySteps = 5;
+  for (let i = 0; i <= ySteps; i++) {
+    const val = (yMaxFreq / ySteps) * i;
+    const y = yFreq(val);
+    svg += `<line x1="${marginLeft}" y1="${y}" x2="${W - marginRight}" y2="${y}" stroke="#e6ddd2" stroke-width="1"/>`;
+    svg += `<text x="${marginLeft - 10}" y="${y + 4}" text-anchor="end" font-size="11" fill="#7a7068">${Math.round(val)}</text>`;
+  }
+
+  // Y axis right (percentage) labels 0,20,40,60,80,100
+  for (let p = 0; p <= 100; p += 20) {
+    const y = yPct(p);
+    svg += `<text x="${W - marginRight + 10}" y="${y + 4}" text-anchor="start" font-size="11" fill="#3b6e8f">${p}%</text>`;
+  }
+
+  // 80% reference line
+  const y80 = yPct(80);
+  svg += `<line x1="${marginLeft}" y1="${y80}" x2="${W - marginRight}" y2="${y80}" stroke="#7a7068" stroke-width="1.5" stroke-dasharray="6,4"/>`;
+  svg += `<text x="${W - marginRight - 4}" y="${y80 - 6}" text-anchor="end" font-size="11" fill="#7a7068" font-weight="600">80%</text>`;
+
+  // Bars
+  pareto.forEach((d, i) => {
+    const x = xPos(i);
+    const yTop = yFreq(d.freq);
+    const barH = plotH + marginTop - yTop;
+    const fill = d.vital ? '#c98a1b' : '#c1622d';
+    svg += `<rect x="${x}" y="${yTop}" width="${barWidth}" height="${barH}" fill="${fill}" rx="3"/>`;
+    // value label on top of bar
+    svg += `<text x="${x + barWidth/2}" y="${yTop - 6}" text-anchor="middle" font-size="12" font-weight="600" fill="#2b2622">${d.freq}</text>`;
+  });
+
+  // Cumulative line + points
+  let linePoints = '';
+  pareto.forEach((d, i) => {
+    const x = xPos(i) + barWidth / 2;
+    const y = yPct(d.cumPct);
+    linePoints += `${x},${y} `;
+  });
+  svg += `<polyline points="${linePoints.trim()}" fill="none" stroke="#3b6e8f" stroke-width="2.5"/>`;
+  pareto.forEach((d, i) => {
+    const x = xPos(i) + barWidth / 2;
+    const y = yPct(d.cumPct);
+    svg += `<circle cx="${x}" cy="${y}" r="4" fill="#3b6e8f"/>`;
+    svg += `<text x="${x}" y="${y - 10}" text-anchor="middle" font-size="11" font-weight="600" fill="#3b6e8f">${d.cumPct.toFixed(0)}%</text>`;
+  });
+
+  // X axis category labels (wrapped/rotated for long names)
+  pareto.forEach((d, i) => {
+    const x = xPos(i) + barWidth / 2;
+    const y = marginTop + plotH + 18;
+    const words = wrapLabel(d.name, 14);
+    words.forEach((line, li) => {
+      svg += `<text x="${x}" y="${y + li * 13}" text-anchor="middle" font-size="11" fill="#2b2622">${escapeXml(line)}</text>`;
+    });
+  });
+
+  // Axis lines
+  svg += `<line x1="${marginLeft}" y1="${marginTop}" x2="${marginLeft}" y2="${marginTop + plotH}" stroke="#2b2622" stroke-width="1"/>`;
+  svg += `<line x1="${marginLeft}" y1="${marginTop + plotH}" x2="${W - marginRight}" y2="${marginTop + plotH}" stroke="#2b2622" stroke-width="1"/>`;
+  svg += `<line x1="${W - marginRight}" y1="${marginTop}" x2="${W - marginRight}" y2="${marginTop + plotH}" stroke="#3b6e8f" stroke-width="1"/>`;
+
+  // Axis titles
+  svg += `<text x="${marginLeft - 45}" y="${marginTop - 10}" font-size="11" fill="#7a7068" font-weight="600">Frequency</text>`;
+  svg += `<text x="${W - marginRight + 45}" y="${marginTop - 10}" font-size="11" fill="#3b6e8f" font-weight="600" text-anchor="end">Cumulative %</text>`;
+
+  svg += `</svg>`;
+  chartWrap.innerHTML = svg;
+  chartActions.style.display = 'flex';
+
+  renderFreqTable(pareto);
+  populatePrioritySelect(pareto);
+}
+
+function renderFreqTable(pareto) {
+  freqTableWrap.style.display = 'block';
+  freqTableBody.innerHTML = '';
+  pareto.forEach(d => {
+    const tr = document.createElement('tr');
+    if (d.vital) tr.classList.add('vital');
+    tr.innerHTML = `
+      <td>${escapeXml(d.name)}</td>
+      <td class="num">${d.freq}</td>
+      <td class="num">${d.pct.toFixed(1)}%</td>
+      <td class="num">${d.cumPct.toFixed(1)}%</td>
+    `;
+    freqTableBody.appendChild(tr);
+  });
+}
+
+function wrapLabel(text, maxChars) {
+  const words = text.split(' ');
+  const lines = [];
+  let current = '';
+  words.forEach(w => {
+    // hard-break a single word that's longer than maxChars on its own
+    while (w.length > maxChars) {
+      if (current) { lines.push(current.trim()); current = ''; }
+      lines.push(w.slice(0, maxChars));
+      w = w.slice(maxChars);
+    }
+    if ((current + ' ' + w).trim().length > maxChars) {
+      if (current) lines.push(current.trim());
+      current = w;
+    } else {
+      current = (current + ' ' + w).trim();
+    }
+  });
+  if (current) lines.push(current);
+  return lines.slice(0, 4); // max 4 lines
+}
+
+function escapeXml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ============================================================
+// SHARED: download an <svg> element as a PNG file
+// ============================================================
+function downloadSvgAsPng(svgEl, filename, scale = 2) {
+  if (!svgEl) {
+    alert('Nothing to download yet.');
+    return;
+  }
+
+  // Ensure explicit width/height so the rasterized image has correct dimensions
+  let width = parseFloat(svgEl.getAttribute('width'));
+  let height = parseFloat(svgEl.getAttribute('height'));
+  if (!width || !height) {
+    const vb = svgEl.viewBox && svgEl.viewBox.baseVal;
+    if (vb && vb.width && vb.height) { width = vb.width; height = vb.height; }
+    else { width = svgEl.clientWidth || 800; height = svgEl.clientHeight || 600; }
+  }
+
+  // Clone so we don't disturb the live element, and make sure it carries
+  // explicit namespace + dimensions for standalone rendering.
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('width', width);
+  clone.setAttribute('height', height);
+
+  // Remove interactive handles — they should not appear in the downloaded image
+  clone.querySelectorAll('.ishi-anchor-handle, .ishi-bone-handle').forEach(el => el.remove());
+
+  const svgData = new XMLSerializer().serializeToString(clone);
+
+  function downloadSvgFile() {
+    const svgFilename = filename.replace(/\.png$/i, '.svg');
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const link = document.createElement('a');
+    link.download = svgFilename;
+    link.href = URL.createObjectURL(svgBlob);
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  let settled = false;
+  const safetyTimer = setTimeout(() => {
+    if (settled) return;
+    settled = true;
+    // PNG rendering didn't complete in time — fall back to an SVG download
+    downloadSvgFile();
+  }, 2500);
+
+  try {
+    const encoded = btoa(unescape(encodeURIComponent(svgData)));
+    const dataUrl = 'data:image/svg+xml;base64,' + encoded;
+
+    const img = new Image();
+    img.onerror = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(safetyTimer);
+      downloadSvgFile();
+    };
+    img.onload = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(safetyTimer);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(blob => {
+        if (!blob) { downloadSvgFile(); return; }
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      });
+    };
+    img.src = dataUrl;
+  } catch (err) {
+    if (!settled) {
+      settled = true;
+      clearTimeout(safetyTimer);
+      downloadSvgFile();
+    }
+  }
+}
+
+// ============================================================
+// PRIORITY DECISION
+// ============================================================
+function populatePrioritySelect(pareto) {
+  const prevSelected = new Set(selectedPriorities);
+  priorityOptions.innerHTML = '';
+  selectedPriorities = [];
+
+  pareto.forEach(d => {
+    const id = 'pri_' + d.name.replace(/[^a-z0-9]/gi, '_');
+    const wrap = document.createElement('label');
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.gap = '8px';
+    wrap.style.padding = '6px 0';
+    wrap.style.fontSize = '13px';
+    wrap.style.cursor = 'pointer';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = id;
+    checkbox.value = d.name;
+    checkbox.checked = prevSelected.has(d.name);
+    if (checkbox.checked) selectedPriorities.push(d.name);
+
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        selectedPriorities.push(d.name);
+      } else {
+        selectedPriorities = selectedPriorities.filter(n => n !== d.name);
+      }
+      evaluatePriority();
+    });
+
+    const span = document.createElement('span');
+    span.textContent = `${d.name} (${d.freq} occurrences, ${d.pct.toFixed(1)}%, cumulative ${d.cumPct.toFixed(1)}%)`;
+
+    wrap.appendChild(checkbox);
+    wrap.appendChild(span);
+    priorityOptions.appendChild(wrap);
+  });
+
+  // store pareto for evaluation
+  window.__currentPareto = pareto;
+
+  if (selectedPriorities.length > 0) {
+    evaluatePriority();
+  } else {
+    priorityFeedback.classList.remove('show');
+    continueBtn.disabled = true;
+  }
+}
+
+function evaluatePriority() {
+  const pareto = window.__currentPareto || [];
+  if (selectedPriorities.length === 0) {
+    priorityFeedback.classList.remove('show');
+    continueBtn.disabled = true;
+    return;
+  }
+
+  const chosenItems = selectedPriorities.map(name => pareto.find(d => d.name === name));
+  const vitalNames = pareto.filter(d => d.vital).map(d => d.name);
+  const top = pareto[0];
+
+  priorityFeedback.classList.remove('success', 'warning', 'danger');
+
+  const includesTop = selectedPriorities.includes(top.name);
+  const allVital = chosenItems.every(d => d.vital);
+
+  if (includesTop && allVital) {
+    priorityFeedback.classList.add('success');
+    const others = chosenItems.filter(d => d.name !== top.name).map(d => escapeXml(d.name));
+    priorityFeedback.innerHTML = `✅ Correct focus. <strong>${escapeXml(top.name)}</strong> is the largest single contributor (${top.freq} occurrences, ${top.pct.toFixed(1)}%). ` +
+      (others.length > 0
+        ? `Together with ${others.join(', ')}, these "vital few" categories account for about ${chosenItems[chosenItems.length - 1].cumPct.toFixed(0)}% of total defects — addressing them first gives the biggest return on improvement effort.`
+        : `It alone already accounts for the majority of cumulative impact — start here.`);
+  } else if (allVital) {
+    priorityFeedback.classList.add('warning');
+    priorityFeedback.innerHTML = `⚡ Reasonable choice — ${chosenItems.map(d => `<strong>${escapeXml(d.name)}</strong>`).join(' and ')} ${chosenItems.length > 1 ? 'are' : 'is'} part of the "vital few". However, <strong>${escapeXml(top.name)}</strong> (${top.freq} occurrences, ${top.pct.toFixed(1)}%) has the single largest impact and is usually the best starting point.`;
+  } else {
+    const trivial = chosenItems.filter(d => !d.vital).map(d => escapeXml(d.name));
+    priorityFeedback.classList.add('danger');
+    priorityFeedback.innerHTML = `⚠️ ${trivial.map(n => `<strong>${n}</strong>`).join(', ')} ${trivial.length > 1 ? 'are' : 'is'} part of the "trivial many" and ${trivial.length > 1 ? 'contribute' : 'contributes'} relatively little to total defects. The 80/20 rule suggests focusing on <strong>${escapeXml(top.name)}</strong> first (${top.freq} occurrences, ${top.pct.toFixed(1)}%), which offers far greater improvement leverage.`;
+  }
+
+  priorityFeedback.classList.add('show');
+  continueBtn.disabled = false;
+}
+
+continueBtn.addEventListener('click', () => {
+  const pareto = window.__currentPareto || [];
+  if (selectedPriorities.length === 0) return;
+
+  // Build the sequential queue from the categories the student selected,
+  // ordered by frequency (descending), matching the Pareto order.
+  phase2Queue = pareto
+    .filter(d => selectedPriorities.includes(d.name))
+    .map(d => ({ name: d.name, freq: d.freq, pct: d.pct, cumPct: d.cumPct }));
+
+  masterIndex = 0;
+  phase2Results = {};
+  ishikawaData = {};
+  whysData = {};
+  validationData = {};
+  actionData = {};
+
+  startDefectCycle();
+});
+
+// ============================================================
+// MASTER CONTROLLER — runs the full cycle (Brainstorm -> Affinity ->
+// Ishikawa -> 5 Whys -> Validation -> Action) for one defect at a time.
+// ============================================================
+let masterIndex = 0;
+
+function startDefectCycle() {
+  if (masterIndex >= phase2Queue.length) {
+    // All defects processed — show final summary but keep all cards visible
+    phase2Card.style.display = 'none'; // hide brainstorm input (no longer needed)
+    pathChoiceCard.style.display = 'none';
+    finalSummary.style.display = 'block';
+    renderFinalSummary();
+    finalSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
+  // Don't hide completed phase cards — let them accumulate for review and download
+  pathChoiceCard.style.display = 'none'; // will be shown via showPathChoice()
+
+  // Initialize this defect's bone config (custom labels / enabled state)
+  // now, so renaming is possible starting from the Affinity board.
+  const current = phase2Queue[masterIndex];
+  if (!boneConfig[current.name]) {
+    boneConfig[current.name] = SIX_M.map(c => ({ ...c, enabled: true }));
+  }
+
+  phase2Index = masterIndex;
+  phase2Card.style.display = 'block';
+  startCauseStep();
+  phase2Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ============================================================
+// PHASE 2 · BRAINSTORMING + AFFINITY
+// ============================================================
+function renderPhase2Progress() {
+  phase2Progress.innerHTML = '';
+  phase2Queue.forEach((d, i) => {
+    const span = document.createElement('span');
+    span.className = 'progress-step';
+    if (i < phase2Index) span.classList.add('done');
+    else if (i === phase2Index) span.classList.add('current');
+    span.textContent = `${i + 1}. ${d.name}`;
+    phase2Progress.appendChild(span);
+  });
+}
+
+function startCauseStep() {
+  document.getElementById('addCauseBtn').style.display = '';
+  document.getElementById('buildAffinityBtn').style.display = '';
+
+  const current = phase2Queue[phase2Index];
+  causeContext.innerHTML = `Working on defect <strong>${escapeXml(current.name)}</strong> ` +
+    `(${current.freq} occurrences, ${current.pct.toFixed(1)}% of total, cumulative ${current.cumPct.toFixed(1)}%). ` +
+    `List every possible cause that could explain this defect.`;
+
+  // restore previous causes for this defect if revisited, else start fresh with 3 empty rows
+  const saved = phase2Results[current.name];
+  causes = saved ? JSON.parse(JSON.stringify(saved.causes)) : [];
+  causeIdCounter = causes.length ? Math.max(...causes.map(c => c.id)) + 1 : 0;
+
+  if (causes.length === 0) {
+    addCause('');
+    addCause('');
+    addCause('');
+  } else {
+    renderCauseList();
+  }
+
+  affinitySection.style.display = 'none';
+  renderPhase2Progress();
+}
+
+function addCause(text = '') {
+  causes.push({ id: causeIdCounter++, text });
+  renderCauseList();
+}
+
+function removeCause(id) {
+  causes = causes.filter(c => c.id !== id);
+  if (causes.length === 0) addCause('');
+  else renderCauseList();
+}
+
+function updateCause(id, text) {
+  const c = causes.find(c => c.id === id);
+  if (c) c.text = text;
+}
+
+function renderCauseList() {
+  causeList.innerHTML = '';
+  causes.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'cause-item';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'e.g. worn cutting tool';
+    input.value = c.text;
+    input.addEventListener('input', e => updateCause(c.id, e.target.value));
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Remove';
+    removeBtn.addEventListener('click', () => removeCause(c.id));
+
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    causeList.appendChild(row);
+  });
+}
+
+addCauseBtn.addEventListener('click', () => addCause(''));
+
+// ---- Suggestion engine (suggests, does not auto-assign) ----
+function suggestCategory(text) {
+  const lower = text.toLowerCase();
+  for (const cat of SIX_M) {
+    const hints = CATEGORY_HINTS[cat.id];
+    if (hints.some(h => lower.includes(h))) return cat.id;
+  }
+  return null;
+}
+
+// ---- Build affinity board ----
+buildAffinityBtn.addEventListener('click', () => {
+  const validCauses = causes.filter(c => c.text.trim() !== '');
+  if (validCauses.length < 2) {
+    alert('Please enter at least 2 causes before building the affinity board.');
+    return;
+  }
+  causes = validCauses;
+
+  // restore previous assignments if revisited, else suggest
+  const current = phase2Queue[phase2Index];
+  const saved = phase2Results[current.name];
+  if (saved && saved.assignments) {
+    affinityAssignments = { ...saved.assignments };
+    // ensure every current cause has an entry
+    causes.forEach(c => {
+      if (!(c.id in affinityAssignments)) affinityAssignments[c.id] = null;
+    });
+  } else {
+    affinityAssignments = {};
+    causes.forEach(c => { affinityAssignments[c.id] = null; });
+  }
+
+  renderAffinityBoard();
+  affinitySection.style.display = 'block';
+  affinitySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+backToBrainstormBtn.addEventListener('click', () => {
+  affinitySection.style.display = 'none';
+});
+
+function renderAffinityBoard() {
+  affinityBoard.innerHTML = '';
+
+  // Unsorted pool first
+  const pool = document.createElement('div');
+  pool.className = 'affinity-col unsorted-pool';
+  pool.dataset.category = '';
+  pool.innerHTML = `<h4>Unsorted causes</h4>`;
+  affinityBoard.appendChild(pool);
+
+  // 6M columns (using this defect's customizable bone labels)
+  const current = phase2Queue[phase2Index];
+  const config = getBoneConfig(current.name);
+  config.forEach(cat => {
+    const col = document.createElement('div');
+    col.className = 'affinity-col';
+    col.dataset.category = cat.id;
+
+    const header = document.createElement('h4');
+    const swatch = document.createElement('span');
+    swatch.className = 'swatch';
+    swatch.style.background = cat.color;
+
+    const labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.value = cat.label;
+    labelInput.className = 'affinity-col-label';
+    labelInput.addEventListener('input', e => {
+      cat.label = e.target.value;
+    });
+    labelInput.addEventListener('blur', () => {
+      if (cat.label.trim() === '') {
+        cat.label = SIX_M.find(s => s.id === cat.id).label;
+        labelInput.value = cat.label;
+      }
+    });
+
+    header.appendChild(swatch);
+    header.appendChild(labelInput);
+    col.appendChild(header);
+    affinityBoard.appendChild(col);
+  });
+
+  // Place cards
+  causes.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'affinity-card';
+    card.draggable = true;
+    card.dataset.causeId = c.id;
+
+    const suggestion = suggestCategory(c.text);
+    const assigned = affinityAssignments[c.id];
+
+    let html = escapeXml(c.text);
+    if (!assigned && suggestion) {
+      const suggCat = config.find(s => s.id === suggestion) || SIX_M.find(s => s.id === suggestion);
+      card.classList.add('suggested');
+      html += `<span class="suggestion-tag">Suggested: ${suggCat.label}</span>`;
+    }
+    card.innerHTML = html;
+
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', String(c.id));
+      setTimeout(() => card.style.opacity = '0.4', 0);
+    });
+    card.addEventListener('dragend', () => { card.style.opacity = '1'; });
+
+    const targetCol = assigned
+      ? affinityBoard.querySelector(`.affinity-col[data-category="${assigned}"]`)
+      : pool;
+    (targetCol || pool).appendChild(card);
+  });
+
+  // Drop handling
+  affinityBoard.querySelectorAll('.affinity-col').forEach(col => {
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      col.classList.add('dragover');
+    });
+    col.addEventListener('dragleave', () => col.classList.remove('dragover'));
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.classList.remove('dragover');
+      const causeId = Number(e.dataTransfer.getData('text/plain'));
+      const category = col.dataset.category || null;
+      affinityAssignments[causeId] = category;
+      renderAffinityBoard();
+      checkAffinityComplete();
+    });
+  });
+
+  checkAffinityComplete();
+}
+
+function checkAffinityComplete() {
+  const allAssigned = causes.every(c => affinityAssignments[c.id]);
+  phase2ContinueBtn.disabled = !allAssigned;
+}
+
+phase2ContinueBtn.addEventListener('click', () => {
+  const current = phase2Queue[phase2Index];
+  phase2Results[current.name] = {
+    causes: JSON.parse(JSON.stringify(causes)),
+    assignments: { ...affinityAssignments },
+  };
+
+  phase2Card.style.display = 'none';
+  showPathChoice();
+});
+
+function showPathChoice() {
+  const current = phase2Queue[masterIndex];
+  pathChoice[current.name] = { ishikawa: false, whys: false };
+
+  pathChoiceOptions.innerHTML = '';
+  pathChoiceOptionsWrap.style.display = 'flex';
+  pathChoiceContinueWrap().style.display = 'flex';
+  pathChoiceSummary.style.display = 'none';
+
+  const options = [
+    { key: 'ishikawa', title: '🐟 Ishikawa (Fishbone) Diagram', desc: 'Sort your causes onto a fishbone diagram, then branch down to sub-causes and root causes visually.' },
+    { key: 'whys', title: '❓ 5 Whys', desc: 'Take the causes from your affinity groups and drill down by asking "Why?" up to five times for each one.' },
+  ];
+
+  options.forEach(opt => {
+    const label = document.createElement('label');
+    label.className = 'path-choice-option';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.addEventListener('change', () => {
+      pathChoice[current.name][opt.key] = checkbox.checked;
+      const anyChecked = pathChoice[current.name].ishikawa || pathChoice[current.name].whys;
+      pathChoiceContinueBtn.disabled = !anyChecked;
+    });
+
+    const textWrap = document.createElement('div');
+    textWrap.innerHTML = `<div class="path-title">${opt.title}</div><div class="path-desc">${opt.desc}</div>`;
+
+    label.appendChild(checkbox);
+    label.appendChild(textWrap);
+    pathChoiceOptions.appendChild(label);
+  });
+
+  pathChoiceContinueBtn.disabled = true;
+  pathChoiceCard.style.display = 'block';
+  pathChoiceCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+pathChoiceContinueBtn.addEventListener('click', () => {
+  const current = phase2Queue[masterIndex];
+  const choice = pathChoice[current.name];
+
+  // Switch the card into a compact "summary" state, but keep it visible so
+  // the student can come back and change their mind.
+  pathChoiceOptionsWrap.style.display = 'none';
+  pathChoiceContinueWrap().style.display = 'none';
+  const labels = [];
+  if (choice.ishikawa) labels.push('Ishikawa Diagram');
+  if (choice.whys) labels.push('5 Whys');
+  pathChoiceSummaryText.textContent = `Your path: ${labels.join(' → ')}`;
+  pathChoiceSummary.style.display = 'block';
+
+  if (choice.ishikawa) {
+    startPhase3ForCurrent();
+  } else if (choice.whys) {
+    startPhase4ForCurrent();
+  } else {
+    // shouldn't happen (button disabled until at least one is checked), but
+    // fall back to validation if somehow neither was selected
+    startPhase5ForCurrent();
+  }
+});
+
+pathChoiceChangeBtn.addEventListener('click', () => {
+  // Re-expand the choice options so the student can change their selection
+  pathChoiceOptionsWrap.style.display = 'flex';
+  pathChoiceContinueWrap().style.display = 'flex';
+  pathChoiceSummary.style.display = 'none';
+
+  // Hide downstream phase cards for this defect until the student re-confirms
+  phase3Card.style.display = 'none';
+  phase4Card.style.display = 'none';
+  phase5Card.style.display = 'none';
+
+  pathChoiceCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+// ============================================================
+// CHART DOWNLOAD
+// ============================================================
+downloadChartBtn.addEventListener('click', () => {
+  const svgEl = chartWrap.querySelector('svg');
+  downloadSvgAsPng(svgEl, 'pareto_chart.png');
+});
+
+// ============================================================
+// FREQUENCY TABLE DOWNLOAD
+// ============================================================
+document.getElementById('downloadFreqTableBtn').addEventListener('click', () => {
+  const pareto = window.__currentPareto || [];
+  if (pareto.length === 0) return;
+
+  const colWidths = [320, 130, 130, 150];
+  const rowH = 36;
+  const headerH = 40;
+  const W = colWidths.reduce((a, b) => a + b, 0);
+  const H = headerH + rowH * pareto.length + 20;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, sans-serif">`;
+  svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"/>`;
+
+  // Header
+  const headers = ['Problem / Defect', 'Frequency', '% of total', 'Cumulative %'];
+  let xCursor = 0;
+  headers.forEach((h, i) => {
+    svg += `<rect x="${xCursor}" y="0" width="${colWidths[i]}" height="${headerH}" fill="#2b2622"/>`;
+    const anchor = i === 0 ? 'start' : 'end';
+    const tx = i === 0 ? xCursor + 12 : xCursor + colWidths[i] - 12;
+    svg += `<text x="${tx}" y="${headerH / 2 + 5}" text-anchor="${anchor}" font-size="13" font-weight="700" fill="#ffffff">${escapeXml(h)}</text>`;
+    xCursor += colWidths[i];
+  });
+
+  // Rows
+  pareto.forEach((d, i) => {
+    const y = headerH + i * rowH;
+    const rowFill = d.vital ? '#f3ddd0' : (i % 2 === 0 ? '#faf6f0' : '#ffffff');
+    svg += `<rect x="0" y="${y}" width="${W}" height="${rowH}" fill="${rowFill}"/>`;
+
+    const values = [d.name, String(d.freq), d.pct.toFixed(1) + '%', d.cumPct.toFixed(1) + '%'];
+    let xc = 0;
+    values.forEach((v, ci) => {
+      const anchor = ci === 0 ? 'start' : 'end';
+      const tx = ci === 0 ? xc + 12 : xc + colWidths[ci] - 12;
+      const weight = d.vital ? '700' : '400';
+      svg += `<text x="${tx}" y="${y + rowH / 2 + 5}" text-anchor="${anchor}" font-size="13" font-weight="${weight}" fill="#2b2622">${escapeXml(v)}</text>`;
+      xc += colWidths[ci];
+    });
+    svg += `<line x1="0" y1="${y + rowH}" x2="${W}" y2="${y + rowH}" stroke="#e6ddd2" stroke-width="1"/>`;
+  });
+
+  svg += `</svg>`;
+
+  const wrapperDiv = document.createElement('div');
+  wrapperDiv.innerHTML = svg;
+  downloadSvgAsPng(wrapperDiv.querySelector('svg'), 'pareto_frequency_table.png');
+});
+
+// ============================================================
+// CONTROLS
+// ============================================================
+document.getElementById('addRowBtn').addEventListener('click', () => addRow());
+document.getElementById('clearBtn').addEventListener('click', () => {
+  defects = [];
+  idCounter = 0;
+  renderTable();
+});
+document.getElementById('loadExampleBtn').addEventListener('click', () => {
+  const currentCount = defects.length;
+  const targetCount = Math.max(currentCount, EXAMPLE_DATA.length);
+
+  defects = [];
+  idCounter = 0;
+
+  for (let i = 0; i < targetCount; i++) {
+    if (i < EXAMPLE_DATA.length) {
+      addRow(EXAMPLE_DATA[i].name, EXAMPLE_DATA[i].freq);
+    } else {
+      addRow('', ''); // extra rows stay empty for the student to fill in
+    }
+  }
+});
+
+// ============================================================
+// INIT
+// ============================================================
+addRow('', '');
+addRow('', '');
+
+// ============================================================
+// PHASE 3 · ISHIKAWA DIAGRAM
+// ============================================================
+function startPhase3ForCurrent() {
+  selectedCauseRef = null;
+  const current = phase2Queue[masterIndex];
+  const result = phase2Results[current.name];
+  const data = { unsorted: [] };
+  SIX_M.forEach(cat => { data[cat.id] = []; });
+
+  if (result) {
+    result.causes.forEach(c => {
+      const cat = result.assignments[c.id];
+      // Level 1 entry: text + empty level-2 subcauses (each of which can have level-3 subcauses)
+      const entry = { id: ishikawaCauseIdCounter++, text: c.text, subcauses: [] };
+      if (cat && data[cat]) data[cat].push(entry);
+      else data.unsorted.push(entry);
+    });
+  }
+  ishikawaData[current.name] = data;
+
+  phase3Index = masterIndex;
+  phase3Card.style.display = 'block';
+  renderPhase3();
+  phase3Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderPhase3Progress() {
+  phase3Progress.innerHTML = '';
+  phase2Queue.forEach((d, i) => {
+    const span = document.createElement('span');
+    span.className = 'progress-step';
+    if (i < masterIndex) span.classList.add('done');
+    else if (i === masterIndex) span.classList.add('current');
+    span.textContent = `${i + 1}. ${d.name}`;
+    phase3Progress.appendChild(span);
+  });
+}
+
+function renderPhase3() {
+  downloadIshikawaBtn.style.display = '';
+  phase3ContinueBtn.style.display = '';
+  phase3ContinueBtn.textContent = 'Continue →';
+
+  const current = phase2Queue[masterIndex];
+  renderBoneControls(current);
+  renderIshikawaSVG(current);
+  renderIshikawaEditPanel(current);
+  renderPhase3Progress();
+}
+
+function renderBoneControls(current) {
+  const config = getBoneConfig(current.name);
+  boneControls.innerHTML = '';
+
+  config.forEach(cat => {
+    const item = document.createElement('div');
+    item.className = 'bone-control-item';
+    if (!cat.enabled) item.classList.add('disabled');
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = cat.enabled;
+    checkbox.title = cat.enabled ? 'Hide this bone' : 'Show this bone';
+    checkbox.addEventListener('change', () => {
+      cat.enabled = checkbox.checked;
+      if (selectedCauseRef && selectedCauseRef.category === cat.id && !cat.enabled) {
+        selectedCauseRef = null;
+      }
+      renderPhase3();
+    });
+
+    const swatch = document.createElement('span');
+    swatch.className = 'swatch';
+    swatch.style.background = cat.color;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = cat.label;
+    input.addEventListener('input', e => {
+      cat.label = e.target.value;
+      renderIshikawaSVG(current);
+    });
+    input.addEventListener('blur', () => {
+      if (cat.label.trim() === '') {
+        cat.label = SIX_M.find(s => s.id === cat.id).label;
+        input.value = cat.label;
+        renderIshikawaSVG(current);
+      }
+    });
+
+    item.appendChild(checkbox);
+    item.appendChild(swatch);
+    item.appendChild(input);
+    boneControls.appendChild(item);
+  });
+}
+
+function getIshikawaCauses(defectName) {
+  return ishikawaData[defectName] || (() => {
+    const data = { unsorted: [] };
+    SIX_M.forEach(cat => { data[cat.id] = []; });
+    ishikawaData[defectName] = data;
+    return data;
+  })();
+}
+
+// Find a cause by id anywhere within a category's tree (levels 1-3).
+// Returns { node, parentArray, level } or null.
+function findCauseInCategory(list, causeId, level = 1) {
+  for (let i = 0; i < list.length; i++) {
+    const node = list[i];
+    if (node.id === causeId) return { node, parentArray: list, index: i, level };
+    if (node.subcauses) {
+      const found = findCauseInCategory(node.subcauses, causeId, level + 1);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+// ---- SVG fishbone rendering ----
+function renderIshikawaSVG(current) {
+  const data = getIshikawaCauses(current.name);
+  const enabledBones = getEnabledBones(current.name);
+
+  const half = Math.ceil(enabledBones.length / 2);
+  const topCats = enabledBones.slice(0, half);
+  const botCats  = enabledBones.slice(half);
+
+  let maxCauses = 0;
+  enabledBones.forEach(c => { const n = (data[c.id]||[]).length; if(n>maxCauses) maxCauses=n; });
+
+  const W = Math.max(1300, 900 + Math.max(topCats.length, botCats.length) * 100);
+  const H = Math.max(700, 360 + maxCauses * 120);
+  const SPINE_Y = H / 2;
+  const SPINE_X0 = Math.max(180, 80 + maxCauses * 30);  // scale with content
+  const SPINE_X1 = W - 220;
+  const HEAD_W = 195, HEAD_H = 120;
+  const L1 = 140;   // horizontal length for L1 lines — wider for more text room
+  const L2 = 80;    // length of L2 parallel lines
+  const L3 = 75;    // horizontal length for L3
+  const AH = 7;
+
+  currentBoneLines = [];
+  currentBoneLines.push({ x1: SPINE_X0, y1: SPINE_Y, x2: SPINE_X1, y2: SPINE_Y });
+
+  function arrow(tx, ty, fx, fy, color) {
+    const d = Math.hypot(tx-fx, ty-fy)||1;
+    const ux=(tx-fx)/d, uy=(ty-fy)/d, px=-uy, py=ux;
+    const bx=tx-ux*AH*1.8, by=ty-uy*AH*1.8;
+    return `<polygon points="${tx},${ty} ${bx+px*AH},${by+py*AH} ${bx-px*AH},${by-py*AH}" fill="${color}"/>`;
+  }
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, sans-serif">`;
+  svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>`;
+
+  // Spine
+  svg += `<line x1="${SPINE_X0}" y1="${SPINE_Y}" x2="${SPINE_X1-AH*2}" y2="${SPINE_Y}" stroke="#2b2622" stroke-width="3"/>`;
+  svg += arrow(SPINE_X1, SPINE_Y, SPINE_X0, SPINE_Y, '#2b2622');
+
+  // Effect head
+  const hx = SPINE_X1, hy = SPINE_Y - HEAD_H/2;
+  svg += `<rect x="${hx}" y="${hy}" width="${HEAD_W}" height="${HEAD_H}" rx="10" fill="#c1622d"/>`;
+  const el = wrapLabel(current.name, 20);
+  el.forEach((l,i) => { svg += `<text x="${hx+HEAD_W/2}" y="${hy+28+i*16}" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">${escapeXml(l)}</text>`; });
+  const qy = hy + 28 + el.length*16 + 10;
+  svg += `<line x1="${hx+20}" y1="${qy-12}" x2="${hx+HEAD_W-20}" y2="${qy-12}" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>`;
+  svg += `<text x="${hx+HEAD_W/2}" y="${qy}" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">${current.freq} occurrences</text>`;
+  svg += `<text x="${hx+HEAD_W/2}" y="${qy+15}" text-anchor="middle" font-size="11" fill="#f3ddd0">${current.pct.toFixed(1)}% · cum. ${current.cumPct.toFixed(1)}%</text>`;
+
+  if (enabledBones.length === 0) {
+    svg += `<text x="${W/2}" y="${SPINE_Y-20}" text-anchor="middle" font-size="13" fill="#7a7068">Enable at least one category above.</text>`;
+    svg += `</svg>`;
+    ishikawaWrap.innerHTML = svg;
+    wireIshikawaInteractions(current);
+    return;
+  }
+
+  const usableW = SPINE_X1 - SPINE_X0 - 30;
+
+  function drawBone(cats, isTop) {
+    const colW = usableW / cats.length;
+    cats.forEach((cat, ci) => {
+      let baseX = SPINE_X0 + 30 + colW * (ci + 0.5) + (cat.baseOffsetX||0);
+      baseX = Math.max(SPINE_X0+20, Math.min(SPINE_X1-20, baseX));
+
+      const boneH = isTop ? -(180 + maxCauses*32) : (180 + maxCauses*32);
+      const boneOffX = -(140 + maxCauses*24);
+      const tipX = baseX + boneOffX;
+      const tipY = SPINE_Y + boneH;
+
+      const bLen = Math.hypot(baseX-tipX, SPINE_Y-tipY)||1;
+      const bux=(baseX-tipX)/bLen, buy=(SPINE_Y-tipY)/bLen;
+
+      currentBoneLines.push({ x1: tipX, y1: tipY, x2: baseX, y2: SPINE_Y });
+
+      svg += `<line x1="${tipX}" y1="${tipY}" x2="${baseX-bux*AH*2}" y2="${SPINE_Y-buy*AH*2}" stroke="#2b2622" stroke-width="2.5"/>`;
+      svg += arrow(baseX, SPINE_Y, tipX, tipY, '#2b2622');
+      svg += `<circle class="ishi-bone-handle" data-category="${cat.id}" cx="${baseX}" cy="${SPINE_Y}" r="7" fill="${cat.color}" fill-opacity="0.18" stroke="${cat.color}" stroke-width="1.5" style="cursor:ew-resize;"/>`;
+
+      const lblY = isTop ? tipY - 12 : tipY + 22;
+      svg += `<text x="${tipX}" y="${lblY}" text-anchor="middle" font-size="14" font-weight="700" fill="${cat.color}">${escapeXml(cat.label)}</text>`;
+
+      const causeList = data[cat.id] || [];
+      if (!causeList.length) return;
+      const n = causeList.length;
+
+      causeList.forEach((cause, ki) => {
+        const t = (ki + 1) / (n + 1);
+        const ax = tipX + t * (baseX - tipX);
+        const ay = tipY + t * (SPINE_Y - tipY);
+
+        const off1 = cause.offset || {dx:0, dy:0};
+        const aOff1 = cause.anchorOffset || {dx:0, dy:0};
+        const l1x0 = ax - L1 + off1.dx;
+        const l1y0 = ay + off1.dy;
+
+        // Push label position away from bones
+        const pushed = pushAwayFromBones(l1x0, l1y0);
+
+        // Text layout for L1
+        const l1lines = wrapLabel(cause.text||'', 18);
+        const lh = 12;
+        const textAbove = isTop ? (ki % 2 === 0) : (ki % 2 !== 0);
+        const textBaseY = pushed.y + (textAbove ? -(l1lines.length * lh) : lh/2 + 2);
+        let anchor = 'end', textX = pushed.x - 5;
+        if (textX < 100) { anchor = 'start'; textX = pushed.x + 5; }
+
+        // Anchor point (where the arrow tip lands) — default is on the bone,
+        // but preserved after free drag via anchorOffset
+        const finalAx = ax + aOff1.dx;
+        const finalAy = pushed.y + aOff1.dy;
+
+        // Group contains ALL visual elements. No SVG transform — all coords absolute.
+        svg += `<g class="ishi-cause-group" data-cause-id="${cause.id}" data-category="${cat.id}" data-level="1" style="cursor:grab;user-select:none;touch-action:none;">`;
+        // Visible line from text-end to just before arrowhead
+        const d1 = Math.hypot(finalAx-pushed.x, finalAy-pushed.y)||1;
+        const u1x=(finalAx-pushed.x)/d1, u1y=(finalAy-pushed.y)/d1;
+        svg += `<line class="ishi-vis-line" x1="${pushed.x}" y1="${pushed.y}" x2="${finalAx - u1x*AH*1.6}" y2="${finalAy - u1y*AH*1.6}" stroke="#7a7068" stroke-width="1.5"/>`;
+        // Arrowhead
+        svg += arrow(finalAx, finalAy, pushed.x, pushed.y, '#7a7068').replace('<polygon ', '<polygon class="ishi-cause-arrow" ');
+        // Arrow-tip drag handle (small circle at arrowhead)
+        svg += `<circle class="ishi-anchor-handle" cx="${finalAx}" cy="${finalAy}" r="6" fill="white" stroke="#7a7068" stroke-width="1.5" opacity="0.7" style="cursor:crosshair;"/>`;
+        // Wide invisible hitline for body drag
+        svg += `<line class="ishi-cause-line" x1="${pushed.x}" y1="${pushed.y}" x2="${finalAx}" y2="${finalAy}" stroke="transparent" stroke-width="18"/>`;
+        // Text labels
+        l1lines.forEach((ln, li) => {
+          const isSelected = selectedCauseRef && selectedCauseRef.id === cause.id;
+          const fill = isSelected ? '#c1622d' : '#2b2622';
+          svg += `<text class="ishi-cause-text" x="${textX}" y="${textBaseY + li*lh}" text-anchor="${anchor}" font-size="11.5" fill="${fill}" style="user-select:none;">${escapeXml(ln)}</text>`;
+        });
+        svg += `</g>`;
+
+        // Level-2
+        const subs = cause.subcauses || [];
+        subs.forEach((sub, si) => {
+          const subOff = sub.offset || {dx:0, dy:0};
+          const subAOff = sub.anchorOffset || {dx:0, dy:0};
+          const tL1 = (si + 1) / (subs.length + 1);
+          const sax = pushed.x + tL1 * (finalAx - pushed.x);
+          const say = pushed.y + tL1 * (finalAy - pushed.y);
+
+          const perpX = -buy, perpY = bux;
+          const fanSign = (si % 2 === 0) ? 0 : (isTop ? 1 : -1);
+          const FAN = 18;
+          const l2ex = sax + (-bux) * L2 + perpX * fanSign * FAN + subOff.dx;
+          const l2ey = say + (-buy) * L2 + perpY * fanSign * FAN + subOff.dy;
+          const l2FinalSax = sax + subAOff.dx;
+          const l2FinalSay = say + subAOff.dy;
+
+          const d2 = Math.hypot(l2FinalSax-l2ex, l2FinalSay-l2ey)||1;
+          const u2x=(l2FinalSax-l2ex)/d2, u2y=(l2FinalSay-l2ey)/d2;
+
+          svg += `<g class="ishi-cause-group" data-cause-id="${sub.id}" data-category="${cat.id}" data-level="2" style="cursor:grab;user-select:none;touch-action:none;">`;
+          svg += `<line class="ishi-vis-line" x1="${l2ex}" y1="${l2ey}" x2="${l2FinalSax - u2x*AH*1.6}" y2="${l2FinalSay - u2y*AH*1.6}" stroke="#999" stroke-width="1.3"/>`;
+          svg += arrow(l2FinalSax, l2FinalSay, l2ex, l2ey, '#999').replace('<polygon ', '<polygon class="ishi-cause-arrow" ');
+          svg += `<circle class="ishi-anchor-handle" cx="${l2FinalSax}" cy="${l2FinalSay}" r="5" fill="white" stroke="#999" stroke-width="1.3" opacity="0.7" style="cursor:crosshair;"/>`;
+          svg += `<line class="ishi-cause-line" x1="${l2ex}" y1="${l2ey}" x2="${l2FinalSax}" y2="${l2FinalSay}" stroke="transparent" stroke-width="18"/>`;
+
+          const l2lines = wrapLabel(sub.text||'', 16);
+          const l2above = isTop;
+          const l2textY = l2ey + (l2above ? -(l2lines.length * 12 + 2) : 4);
+          let l2anchor = 'middle', l2textX = l2ex;
+          if (l2ex < 80) { l2anchor = 'start'; l2textX = l2ex + 4; }
+          else if (l2ex > W - 60) { l2anchor = 'end'; l2textX = l2ex - 4; }
+
+          l2lines.forEach((ln, li) => {
+            const isSelected = selectedCauseRef && selectedCauseRef.id === sub.id;
+            svg += `<text class="ishi-cause-text" x="${l2textX}" y="${l2textY + li*12}" text-anchor="${l2anchor}" font-size="11" fill="${isSelected ? '#c1622d' : '#3a332d'}" style="user-select:none;">${escapeXml(ln)}</text>`;
+          });
+          svg += `</g>`;
+
+          // Level-3
+          (sub.subcauses||[]).forEach((root, ri) => {
+            const rootOff = root.offset || {dx:0, dy:0};
+            const rootAOff = root.anchorOffset || {dx:0, dy:0};
+            const tL2 = (ri + 1) / (sub.subcauses.length + 1);
+            const r3ax = l2ex + tL2 * (l2FinalSax - l2ex);
+            const r3ay = l2ey + tL2 * (l2FinalSay - l2ey);
+
+            const r3x0 = r3ax - L3 + rootOff.dx;
+            const r3y0 = r3ay + rootOff.dy;
+            const r3pushed = pushAwayFromBones(r3x0, r3y0);
+            const r3FinalAx = r3ax + rootAOff.dx;
+            const r3FinalAy = r3ay + rootAOff.dy;
+
+            const d3 = Math.hypot(r3FinalAx-r3pushed.x, r3FinalAy-r3pushed.y)||1;
+            const u3x=(r3FinalAx-r3pushed.x)/d3, u3y=(r3FinalAy-r3pushed.y)/d3;
+
+            svg += `<g class="ishi-cause-group" data-cause-id="${root.id}" data-category="${cat.id}" data-level="3" style="cursor:grab;user-select:none;touch-action:none;">`;
+            svg += `<line class="ishi-vis-line" x1="${r3pushed.x}" y1="${r3pushed.y}" x2="${r3FinalAx - u3x*AH*1.6}" y2="${r3FinalAy - u3y*AH*1.6}" stroke="#c8a0a0" stroke-width="1.2"/>`;
+            svg += arrow(r3FinalAx, r3FinalAy, r3pushed.x, r3pushed.y, '#bf4040').replace('<polygon ', '<polygon class="ishi-cause-arrow" ');
+            svg += `<circle class="ishi-anchor-handle" cx="${r3FinalAx}" cy="${r3FinalAy}" r="5" fill="white" stroke="#bf4040" stroke-width="1.3" opacity="0.7" style="cursor:crosshair;"/>`;
+            svg += `<line class="ishi-cause-line" x1="${r3pushed.x}" y1="${r3pushed.y}" x2="${r3FinalAx}" y2="${r3FinalAy}" stroke="transparent" stroke-width="18"/>`;
+
+            const r3lines = wrapLabel(root.text||'', 15);
+            const r3textAbove = isTop;
+            const r3baseY = r3pushed.y + (r3textAbove ? -(r3lines.length * 12 + 2) : 4);
+            let r3anchor = 'end', r3textX = r3pushed.x - 4;
+            if (r3textX < 60) { r3anchor = 'start'; r3textX = r3pushed.x + 4; }
+
+            r3lines.forEach((ln, li) => {
+              const isSelected = selectedCauseRef && selectedCauseRef.id === root.id;
+              svg += `<text class="ishi-cause-text" x="${r3textX}" y="${r3baseY + li*12}" text-anchor="${r3anchor}" font-size="10.5" font-weight="700" fill="${isSelected ? '#c1622d' : '#bf4040'}" style="user-select:none;">${escapeXml(ln)}</text>`;
+            });
+            svg += `</g>`;
+          });
+        });
+      });
+    });
+  }
+
+  drawBone(topCats, true);
+  drawBone(botCats, false);
+  svg += `</svg>`;
+  ishikawaWrap.innerHTML = svg;
+  wireIshikawaInteractions(current);
+}
+
+
+// ---- Interaction state ----
+let selectedCauseRef = null; // { id, category }
+
+// Push a point (px,py) away from any registered bone line if it's within
+// MIN_DIST SVG units. Returns adjusted {x,y}.
+function pushAwayFromBones(px, py, MIN_DIST = 38) {
+  for (const bone of currentBoneLines) {
+    const { x1, y1, x2, y2 } = bone;
+    const dx = x2 - x1, dy = y2 - y1;
+    const lenSq = dx*dx + dy*dy;
+    if (lenSq === 0) continue;
+    // Project point onto line segment, clamp to segment
+    let t = ((px - x1)*dx + (py - y1)*dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const closestX = x1 + t*dx;
+    const closestY = y1 + t*dy;
+    const distX = px - closestX;
+    const distY = py - closestY;
+    const dist = Math.hypot(distX, distY);
+    if (dist < MIN_DIST && dist > 0) {
+      // Push the point away from the bone perpendicularly
+      const push = (MIN_DIST - dist) / dist;
+      px += distX * push;
+      py += distY * push;
+    }
+  }
+  return { x: px, y: py };
+}
+
+function wireIshikawaInteractions(current) {
+  const data = getIshikawaCauses(current.name);
+  const svgEl = ishikawaWrap.querySelector('svg');
+  if (!svgEl) return;
+
+  const viewBox = svgEl.viewBox.baseVal; // {width, height} in SVG units
+
+  // Drag a bone's base point left/right along the spine
+  svgEl.querySelectorAll('.ishi-bone-handle').forEach(handle => {
+    const config = getBoneConfig(current.name);
+    const catId = handle.dataset.category;
+    const cat = config.find(c => c.id === catId);
+
+    handle.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      const pointerDownX = e.clientX;
+      const startOffset = cat.baseOffsetX || 0;
+      handle.style.cursor = 'grabbing';
+
+      const onMove = moveEvt => {
+        const liveSvg = ishikawaWrap.querySelector('svg');
+        if (!liveSvg) return;
+        const rect = liveSvg.getBoundingClientRect();
+        const scaleX = liveSvg.viewBox.baseVal.width / rect.width;
+        const screenDx = moveEvt.clientX - pointerDownX;
+        cat.baseOffsetX = startOffset + screenDx * scaleX;
+        renderIshikawaSVG(current);
+      };
+      const onUp = () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+  });
+  const DRAG_THRESHOLD = 4;
+
+  // Helper: recompute line + arrowhead from current x1/y1 → x2/y2
+  function updateCauseLineDOM(g, AH_SIZE) {
+    const visLine = g.querySelector('.ishi-vis-line');
+    const arrowPoly = g.querySelector('.ishi-cause-arrow');
+    if (!visLine || !arrowPoly) return;
+    const x1 = parseFloat(visLine.getAttribute('x1'));
+    const y1 = parseFloat(visLine.getAttribute('y1'));
+    // Read anchor from the anchor handle circle
+    const ah = g.querySelector('.ishi-anchor-handle');
+    const x2 = ah ? parseFloat(ah.getAttribute('cx')) : parseFloat(visLine.getAttribute('x2'));
+    const y2 = ah ? parseFloat(ah.getAttribute('cy')) : parseFloat(visLine.getAttribute('y2'));
+
+    const d = Math.hypot(x2-x1, y2-y1) || 1;
+    const ux = (x2-x1)/d, uy = (y2-y1)/d;
+    const px = -uy, py = ux;
+    const S = AH_SIZE;
+    const bx = x2 - ux*S*1.8, by = y2 - uy*S*1.8;
+
+    // Shorten visible line so it doesn't overlap arrowhead
+    visLine.setAttribute('x2', x2 - ux*S*1.6);
+    visLine.setAttribute('y2', y2 - uy*S*1.6);
+
+    arrowPoly.setAttribute('points',
+      `${x2},${y2} ${bx+px*S},${by+py*S} ${bx-px*S},${by-py*S}`);
+  }
+
+  svgEl.querySelectorAll('.ishi-cause-group').forEach(g => {
+    const AH_SIZE = 7;
+    const causeId = Number(g.dataset.causeId);
+    const category = g.dataset.category;
+    const visLine = g.querySelector('.ishi-vis-line');
+    const hitLine = g.querySelector('.ishi-cause-line');
+    const anchorHandle = g.querySelector('.ishi-anchor-handle');
+    const textEls = Array.from(g.querySelectorAll('.ishi-cause-text'));
+
+    // ── ANCHOR HANDLE drag: moves arrow tip only, changing direction ──
+    if (anchorHandle) {
+      let anchorDown = null;
+      anchorHandle.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        anchorDown = { clientX: e.clientX, clientY: e.clientY,
+          startCx: parseFloat(anchorHandle.getAttribute('cx')),
+          startCy: parseFloat(anchorHandle.getAttribute('cy')) };
+        anchorHandle.setPointerCapture(e.pointerId);
+        anchorHandle.style.cursor = 'crosshair';
+      });
+      anchorHandle.addEventListener('pointermove', e => {
+        if (!anchorDown) return;
+        const rect = svgEl.getBoundingClientRect();
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+        const newCx = anchorDown.startCx + (e.clientX - anchorDown.clientX) * scaleX;
+        const newCy = anchorDown.startCy + (e.clientY - anchorDown.clientY) * scaleY;
+        anchorHandle.setAttribute('cx', newCx);
+        anchorHandle.setAttribute('cy', newCy);
+        updateCauseLineDOM(g, AH_SIZE);
+      });
+      anchorHandle.addEventListener('pointerup', e => {
+        if (!anchorDown) return;
+        try { anchorHandle.releasePointerCapture(e.pointerId); } catch (_) {}
+        const rect = svgEl.getBoundingClientRect();
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+        const newCx = anchorDown.startCx + (e.clientX - anchorDown.clientX) * scaleX;
+        const newCy = anchorDown.startCy + (e.clientY - anchorDown.clientY) * scaleY;
+        anchorDown = null;
+        // Persist anchor offset
+        const found = findCauseInCategory(data[category] || [], causeId);
+        if (found) {
+          if (!found.node.anchorOffset) found.node.anchorOffset = { dx: 0, dy: 0 };
+          // anchorOffset = total displacement of anchor from its default computed position
+          // We store absolute final position in anchorHandle, so on re-render the offset
+          // is recalculated. For now just store delta from initial anchor position.
+          const initCx = parseFloat(anchorHandle.dataset.initCx || anchorHandle.getAttribute('cx'));
+          const initCy = parseFloat(anchorHandle.dataset.initCy || anchorHandle.getAttribute('cy'));
+          found.node.anchorOffset.dx += (newCx - initCx);
+          found.node.anchorOffset.dy += (newCy - initCy);
+        }
+        anchorHandle.style.cursor = 'crosshair';
+        // Don't re-render, DOM already correct
+      });
+      anchorHandle.addEventListener('pointercancel', () => { anchorDown = null; });
+      // Store initial anchor position for offset calculation
+      anchorHandle.dataset.initCx = anchorHandle.getAttribute('cx');
+      anchorHandle.dataset.initCy = anchorHandle.getAttribute('cy');
+    }
+
+    // ── BODY drag: moves entire group (line + anchor + text) together ──
+    let bodyDown = null;
+    let dragging = false;
+
+    g.addEventListener('pointerdown', e => {
+      // Ignore if clicking the anchor handle (handled above)
+      if (e.target.classList.contains('ishi-anchor-handle')) return;
+      e.stopPropagation();
+      bodyDown = {
+        clientX: e.clientX, clientY: e.clientY,
+        // Snapshot ALL current text positions
+        textSnaps: textEls.map(t => ({
+          el: t,
+          x: parseFloat(t.getAttribute('x')),
+          y: parseFloat(t.getAttribute('y'))
+        })),
+        lineX1: visLine ? parseFloat(visLine.getAttribute('x1')) : 0,
+        lineY1: visLine ? parseFloat(visLine.getAttribute('y1')) : 0,
+        anchorCx: anchorHandle ? parseFloat(anchorHandle.getAttribute('cx')) : 0,
+        anchorCy: anchorHandle ? parseFloat(anchorHandle.getAttribute('cy')) : 0,
+      };
+      dragging = false;
+      g.setPointerCapture(e.pointerId);
+    });
+
+    g.addEventListener('pointermove', e => {
+      if (!bodyDown || e.target.classList.contains('ishi-anchor-handle')) return;
+      const screenDx = e.clientX - bodyDown.clientX;
+      const screenDy = e.clientY - bodyDown.clientY;
+      if (!dragging && Math.hypot(screenDx, screenDy) < DRAG_THRESHOLD) return;
+      dragging = true;
+      g.style.cursor = 'grabbing';
+
+      const rect = svgEl.getBoundingClientRect();
+      const scaleX = viewBox.width / rect.width;
+      const scaleY = viewBox.height / rect.height;
+      const svgDx = screenDx * scaleX;
+      const svgDy = screenDy * scaleY;
+
+      // Move line start
+      if (visLine) {
+        visLine.setAttribute('x1', bodyDown.lineX1 + svgDx);
+        visLine.setAttribute('y1', bodyDown.lineY1 + svgDy);
+      }
+      if (hitLine) {
+        hitLine.setAttribute('x1', bodyDown.lineX1 + svgDx);
+        hitLine.setAttribute('y1', bodyDown.lineY1 + svgDy);
+      }
+      // Move anchor handle (and thus arrow tip)
+      if (anchorHandle) {
+        anchorHandle.setAttribute('cx', bodyDown.anchorCx + svgDx);
+        anchorHandle.setAttribute('cy', bodyDown.anchorCy + svgDy);
+      }
+      // Move all text
+      bodyDown.textSnaps.forEach(({ el, x, y }) => {
+        el.setAttribute('x', x + svgDx);
+        el.setAttribute('y', y + svgDy);
+      });
+      // Recompute line endpoint and arrowhead
+      updateCauseLineDOM(g, AH_SIZE);
+    });
+
+    const endBodyDrag = e => {
+      if (!bodyDown) return;
+      try { g.releasePointerCapture(e.pointerId); } catch (_) {}
+      const wasDragging = dragging;
+      const bd = bodyDown;
+      bodyDown = null;
+      dragging = false;
+      g.style.cursor = 'grab';
+
+      if (wasDragging) {
+        const rect = svgEl.getBoundingClientRect();
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+        const svgDx = (e.clientX - bd.clientX) * scaleX;
+        const svgDy = (e.clientY - bd.clientY) * scaleY;
+
+        // Persist into node offset
+        const found = findCauseInCategory(data[category] || [], causeId);
+        if (found) {
+          if (!found.node.offset) found.node.offset = { dx: 0, dy: 0 };
+          found.node.offset.dx += svgDx;
+          found.node.offset.dy += svgDy;
+          if (!found.node.anchorOffset) found.node.anchorOffset = { dx: 0, dy: 0 };
+          found.node.anchorOffset.dx += svgDx;
+          found.node.anchorOffset.dy += svgDy;
+          // Also update the anchor handle's init baseline
+          if (anchorHandle) {
+            anchorHandle.dataset.initCx = anchorHandle.getAttribute('cx');
+            anchorHandle.dataset.initCy = anchorHandle.getAttribute('cy');
+          }
+        }
+        return; // don't re-render
+      }
+
+      // Click → select/deselect
+      e.stopPropagation();
+      if (selectedCauseRef && selectedCauseRef.id === causeId) {
+        selectedCauseRef = null;
+      } else {
+        selectedCauseRef = { id: causeId, category };
+      }
+      renderIshikawaSVG(current);
+    };
+
+    g.addEventListener('pointerup', endBodyDrag);
+    g.addEventListener('pointercancel', endBodyDrag);
+
+    g.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      const textEl = g.querySelector('.ishi-cause-text');
+      openIshikawaInlineEditor(current, causeId, category, textEl);
+    });
+  });
+
+
+  // Click on a bone: move the selected cause (and its subtree) there as a level-1 item
+  svgEl.querySelectorAll('.ishi-bone-target').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!selectedCauseRef) return;
+      const targetCat = el.dataset.category;
+      if (targetCat === selectedCauseRef.category) {
+        selectedCauseRef = null;
+        renderIshikawaSVG(current);
+        return;
+      }
+      const found = findCauseInCategory(data[selectedCauseRef.category] || [], selectedCauseRef.id);
+      if (!found) return;
+      found.parentArray.splice(found.index, 1);
+      if (!found.node.subcauses) found.node.subcauses = [];
+      found.node.offset = { dx: 0, dy: 0 };
+      data[targetCat].push(found.node);
+      selectedCauseRef = null;
+      renderIshikawaSVG(current);
+      renderIshikawaEditPanel(current);
+    });
+  });
+
+  // Click on empty SVG area: deselect
+  svgEl.addEventListener('click', () => {
+    if (selectedCauseRef) {
+      selectedCauseRef = null;
+      renderIshikawaSVG(current);
+    }
+  });
+}
+
+// ---- Inline text editor overlay ----
+function openIshikawaInlineEditor(current, causeId, category, textEl) {
+  const data = getIshikawaCauses(current.name);
+  const found = findCauseInCategory(data[category] || [], causeId);
+  if (!found) return;
+  const cause = found.node;
+
+  const svgEl = ishikawaWrap.querySelector('svg');
+  const bbox = textEl.getBoundingClientRect();
+  const wrapBox = ishikawaWrap.getBoundingClientRect();
+
+  // remove any existing editor
+  const existing = ishikawaWrap.querySelector('.ishi-inline-editor');
+  if (existing) existing.remove();
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'ishi-inline-editor';
+  input.value = cause.text;
+  input.style.position = 'absolute';
+  input.style.left = (bbox.left - wrapBox.left - 150) + 'px';
+  input.style.top = (bbox.top - wrapBox.top - 4) + 'px';
+  input.style.width = '180px';
+  input.style.fontSize = '12px';
+  input.style.fontFamily = "'IBM Plex Sans', sans-serif";
+  input.style.padding = '3px 6px';
+  input.style.border = '1px solid var(--blue)';
+  input.style.borderRadius = '4px';
+  input.style.background = '#fff';
+  input.style.zIndex = '20';
+
+  function commit() {
+    cause.text = input.value;
+    input.remove();
+    renderIshikawaSVG(current);
+    renderIshikawaEditPanel(current);
+  }
+
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape') { input.value = cause.text; input.blur(); }
+  });
+
+  ishikawaWrap.appendChild(input);
+  input.focus();
+  input.select();
+}
+
+// ---- Edit panel rendering ----
+function renderIshikawaEditPanel(current) {
+  const data = getIshikawaCauses(current.name);
+  const config = getBoneConfig(current.name);
+  ishikawaEditPanel.innerHTML = '';
+
+  config.forEach(cat => {
+    if (!cat.enabled) return; // hidden bones don't show an edit block
+
+    const block = document.createElement('div');
+    block.className = 'ishikawa-cat-block';
+    block.innerHTML = `<h4><span class="swatch" style="background:${cat.color}"></span>${escapeXml(cat.label)}</h4>`;
+
+    (data[cat.id] || []).forEach(c => {
+      block.appendChild(buildIshikawaCauseRow(current, c, cat.id, 1));
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-cause-mini';
+    addBtn.textContent = '+ Add cause';
+    addBtn.addEventListener('click', () => {
+      data[cat.id].push({ id: ishikawaCauseIdCounter++, text: '', subcauses: [] });
+      renderPhase3();
+    });
+    block.appendChild(addBtn);
+
+    ishikawaEditPanel.appendChild(block);
+  });
+
+  // Unsorted, only show if non-empty
+  if (data.unsorted.length > 0) {
+    const block = document.createElement('div');
+    block.className = 'ishikawa-cat-block';
+    block.innerHTML = `<h4><span class="swatch" style="background:#9ca3af"></span>Unsorted</h4>`;
+    data.unsorted.forEach(c => {
+      block.appendChild(buildIshikawaCauseRow(current, c, 'unsorted', 1));
+    });
+    ishikawaEditPanel.appendChild(block);
+  }
+}
+
+// Recursive row builder for levels 1-3. `currentCatId` is always the TOP-LEVEL
+// bone this cause's tree lives under (used for the move-to-bone selector,
+// which only appears at level 1).
+function buildIshikawaCauseRow(current, cause, currentCatId, level) {
+  const data = getIshikawaCauses(current.name);
+  if (!cause.subcauses) cause.subcauses = [];
+
+  const levelLabels = { 1: 'L1 · Cause', 2: 'L2 · Sub-cause', 3: 'L3 · Root cause ★' };
+  const levelColors = { 1: 'var(--blue)', 2: 'var(--muted)', 3: '#bf4040' };
+
+  const wrapper = document.createElement('div');
+  wrapper.style.marginLeft = ((level - 1) * 14) + 'px';
+  wrapper.style.borderLeft = level > 1 ? `2px solid ${levelColors[level]}22` : 'none';
+  wrapper.style.paddingLeft = level > 1 ? '8px' : '0';
+  wrapper.style.marginTop = level > 1 ? '4px' : '0';
+
+  // Level badge
+  const badge = document.createElement('div');
+  badge.style.fontSize = '10px';
+  badge.style.fontWeight = '700';
+  badge.style.color = levelColors[level];
+  badge.style.textTransform = 'uppercase';
+  badge.style.letterSpacing = '0.05em';
+  badge.style.marginBottom = '2px';
+  badge.textContent = levelLabels[level] || '';
+  wrapper.appendChild(badge);
+
+  const row = document.createElement('div');
+  row.className = 'ishikawa-cause-row';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = cause.text;
+  input.placeholder = level === 3 ? 'Root cause (e.g. Only one technician)' : (level === 2 ? 'Sub-cause (e.g. Technician is slow)' : 'Cause (e.g. Machine overheats)');
+  input.addEventListener('input', e => {
+    cause.text = e.target.value;
+    renderIshikawaSVG(current); // live update diagram
+  });
+  row.appendChild(input);
+
+  if (level === 1) {
+    const config = getBoneConfig(current.name);
+    const select = document.createElement('select');
+    const allCats = [...config.filter(c => c.enabled), { id: 'unsorted', label: 'Unsorted', enabled: true }];
+    allCats.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat.id;
+      opt.textContent = cat.label;
+      if (cat.id === currentCatId) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.addEventListener('change', () => {
+      const newCat = select.value;
+      data[currentCatId] = data[currentCatId].filter(c => c.id !== cause.id);
+      data[newCat].push(cause);
+      if (selectedCauseRef && selectedCauseRef.id === cause.id) selectedCauseRef = null;
+      renderPhase3();
+    });
+    row.appendChild(select);
+  }
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'btn-remove';
+  removeBtn.textContent = '✕';
+  removeBtn.title = 'Remove';
+  removeBtn.addEventListener('click', () => {
+    if (level === 1) {
+      data[currentCatId] = data[currentCatId].filter(c => c.id !== cause.id);
+    } else {
+      // remove from wherever it sits in the tree
+      const found = findCauseInCategory(data[currentCatId] || [], cause.id);
+      if (found) found.parentArray.splice(found.index, 1);
+    }
+    if (selectedCauseRef && selectedCauseRef.id === cause.id) selectedCauseRef = null;
+    renderPhase3();
+  });
+  row.appendChild(removeBtn);
+
+  wrapper.appendChild(row);
+
+  // Render existing sub-causes (levels 2 and 3)
+  cause.subcauses.forEach(sub => {
+    wrapper.appendChild(buildIshikawaCauseRow(current, sub, currentCatId, level + 1));
+  });
+
+  // "Add sub-cause" only for levels 1 and 2 (level 3 is the root cause, no further nesting)
+  if (level < 3) {
+    const addSubBtn = document.createElement('button');
+    addSubBtn.className = 'add-cause-mini';
+    addSubBtn.style.marginLeft = '14px';
+    addSubBtn.style.width = 'calc(100% - 14px)';
+    addSubBtn.textContent = level === 1 ? '+ Add sub-cause (L2)' : '+ Add root cause (L3 ★)';
+    addSubBtn.addEventListener('click', () => {
+      cause.subcauses.push({ id: ishikawaCauseIdCounter++, text: '', subcauses: [] });
+      renderPhase3();
+    });
+    wrapper.appendChild(addSubBtn);
+  }
+
+  return wrapper;
+}
+
+// ---- Diagram download ----
+downloadIshikawaBtn.addEventListener('click', () => {
+  const svgEl = ishikawaWrap.querySelector('svg');
+  const current = phase2Queue[masterIndex];
+  const safeName = current ? current.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'diagram';
+  downloadSvgAsPng(svgEl, `ishikawa_${safeName}.png`);
+});
+
+phase3ContinueBtn.addEventListener('click', () => {
+  const current = phase2Queue[masterIndex];
+  const choice = pathChoice[current.name] || {};
+  if (choice.whys) {
+    phase3Card.style.display = 'none';
+    startPhase4ForCurrent();
+  } else {
+    // Keep Ishikawa visible — don't hide it
+    startPhase5ForCurrent();
+  }
+});
+
+// ============================================================
+// PHASE 4 · 5 WHYS
+// ============================================================
+function startPhase4ForCurrent() {
+  const current = phase2Queue[masterIndex];
+  const choice = pathChoice[current.name] || {};
+  const config = getBoneConfig(current.name);
+  const entry = {};
+
+  if (choice.ishikawa) {
+    // Source from the Ishikawa hierarchy (levels 1-3, with path breadcrumbs)
+    const data = ishikawaData[current.name] || {};
+
+    function addEntry(c, catId, path) {
+      if (c.text && c.text.trim() !== '') {
+        entry[c.id] = {
+          text: c.text,
+          path: path,
+          category: catId,
+          whys: [''],
+          rootChecked: false,
+        };
+      }
+      (c.subcauses || []).forEach(sub => addEntry(sub, catId, path ? `${path} → ${c.text}` : c.text));
+    }
+
+    config.filter(c => c.enabled).forEach(cat => {
+      (data[cat.id] || []).forEach(c => addEntry(c, cat.id, ''));
+    });
+    (data.unsorted || []).forEach(c => addEntry(c, 'unsorted', ''));
+  } else {
+    // Ishikawa was skipped: source causes directly from the affinity results (level 1 only)
+    const result = phase2Results[current.name];
+    if (result) {
+      result.causes.forEach(c => {
+        if (c.text && c.text.trim() !== '') {
+          const cat = result.assignments[c.id] || 'unsorted';
+          entry[c.id] = {
+            text: c.text,
+            path: '',
+            category: cat,
+            whys: [''],
+            rootChecked: false,
+          };
+        }
+      });
+    }
+  }
+
+  whysData[current.name] = entry;
+
+  phase4Index = masterIndex;
+  phase4Card.style.display = 'block';
+  renderPhase4();
+  phase4Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderPhase4Progress() {
+  phase4Progress.innerHTML = '';
+  phase2Queue.forEach((d, i) => {
+    const span = document.createElement('span');
+    span.className = 'progress-step';
+    if (i < masterIndex) span.classList.add('done');
+    else if (i === masterIndex) span.classList.add('current');
+    span.textContent = `${i + 1}. ${d.name}`;
+    phase4Progress.appendChild(span);
+  });
+}
+
+function renderPhase4() {
+  phase4ContinueBtn.style.display = '';
+  phase4ContinueBtn.textContent = 'Continue →';
+
+  const current = phase2Queue[masterIndex];
+  phase4Context.innerHTML = `Working on defect <strong>${escapeXml(current.name)}</strong>. ` +
+    `For each cause below, fill in the "Why?" chain. You don't need to fill all 5 levels for every cause — stop when you reach a cause that, if fixed, would prevent recurrence, and check it as a candidate root cause.`;
+
+  renderPhase4CausesList(current);
+  renderPhase4Progress();
+}
+
+function renderPhase4CausesList(current) {
+  phase4CausesList.innerHTML = '';
+  const entries = whysData[current.name] || {};
+  const causeIds = Object.keys(entries);
+
+  if (causeIds.length === 0) {
+    phase4CausesList.innerHTML = '<div class="empty-state">No causes were defined for this defect. Go back to Phase 3 to add some.</div>';
+    return;
+  }
+
+  const config = getBoneConfig(current.name);
+  const catLookup = {};
+  config.forEach(c => catLookup[c.id] = c);
+  catLookup['unsorted'] = { label: 'Unsorted', color: '#9ca3af' };
+
+  causeIds.forEach(causeId => {
+    const entry = entries[causeId];
+    // Ensure linear whys array (unlimited length)
+    if (!entry.whys) entry.whys = [''];
+    const cat = catLookup[entry.category] || catLookup['unsorted'];
+
+    const block = document.createElement('div');
+    block.className = 'cause-whys-block';
+
+    const header = document.createElement('div');
+    header.className = 'cause-header';
+    const pathHtml = entry.path ? `<span class="cat-label" style="display:block;margin-top:2px;">${escapeXml(entry.path)} →</span>` : '';
+    header.innerHTML = `
+      <span class="toggle-icon">▼</span>
+      <span class="cat-swatch" style="background:${cat.color}"></span>
+      <span class="cause-title">${escapeXml(entry.text)}${pathHtml}</span>
+      <span class="cat-label">${escapeXml(cat.label)}</span>`;
+    header.addEventListener('click', () => block.classList.toggle('collapsed'));
+
+    const body = document.createElement('div');
+    body.className = 'whys-body';
+
+    const inst = document.createElement('p');
+    inst.style.cssText = 'font-size:12px;color:var(--muted);margin:0 0 10px 0;';
+    inst.textContent = 'Ask "Why?" repeatedly, drilling down until you reach a root cause. Add as many levels as needed.';
+    body.appendChild(inst);
+
+    const rowsWrap = document.createElement('div');
+
+    function redrawRows() {
+      rowsWrap.innerHTML = '';
+      const depthColors = ['var(--blue)', 'var(--amber)', '#bf4040'];
+
+      entry.whys.forEach((val, i) => {
+        const row = document.createElement('div');
+        row.className = 'why-input-row';
+        row.style.borderLeft = `3px solid ${depthColors[Math.min(i, depthColors.length-1)]}`;
+        row.style.paddingLeft = '10px';
+        row.style.marginLeft = `${i * 16}px`;
+
+        const lbl = document.createElement('span');
+        lbl.className = 'why-label';
+        lbl.style.color = depthColors[Math.min(i, depthColors.length-1)];
+        lbl.textContent = `Why? (${i + 1})`;
+
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = val;
+        inp.placeholder = i === 0 ? 'Why does this cause occur?' : 'And why does that happen?';
+        inp.addEventListener('input', e => {
+          entry.whys[i] = e.target.value;
+        });
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-remove';
+        removeBtn.title = 'Remove this level';
+        removeBtn.textContent = '✕';
+        removeBtn.style.display = entry.whys.length > 1 ? '' : 'none';
+        removeBtn.addEventListener('click', () => {
+          entry.whys.splice(i, 1);
+          if (i >= entry.whys.length) entry.rootChecked = false;
+          redrawRows();
+        });
+
+        row.appendChild(lbl);
+        row.appendChild(inp);
+        row.appendChild(removeBtn);
+        rowsWrap.appendChild(row);
+      });
+
+      // "Add Why?" button
+      const addBtn = document.createElement('button');
+      addBtn.className = 'add-cause-mini';
+      addBtn.style.marginLeft = `${entry.whys.length * 16}px`;
+      addBtn.style.marginTop = '6px';
+      addBtn.textContent = `+ Ask Why? again (level ${entry.whys.length + 1})`;
+      addBtn.addEventListener('click', () => {
+        entry.whys.push('');
+        redrawRows();
+      });
+      rowsWrap.appendChild(addBtn);
+
+      // Root-cause checkbox
+      const rootRow = document.createElement('div');
+      rootRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;background:var(--red-light);border-radius:6px;font-size:12.5px;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = entry.rootChecked || false;
+      cb.addEventListener('change', () => { entry.rootChecked = cb.checked; });
+      const cbLbl = document.createElement('label');
+      cbLbl.style.cursor = 'pointer';
+      cbLbl.style.color = '#7a2c2c';
+      cbLbl.textContent = '🎯 Mark the deepest "Why?" as a candidate root cause for validation';
+      rootRow.appendChild(cb);
+      rootRow.appendChild(cbLbl);
+      rowsWrap.appendChild(rootRow);
+    }
+
+    redrawRows();
+    body.appendChild(rowsWrap);
+    block.appendChild(header);
+    block.appendChild(body);
+    phase4CausesList.appendChild(block);
+  });
+}
+
+
+phase4ContinueBtn.addEventListener('click', () => {
+  startPhase5ForCurrent();
+});
+
+// ============================================================
+// PHASE 5 · VALIDATION + ACTION PRIORITIZATION
+// ============================================================
+
+function getDeepestWhy(entry) {
+  if (entry.whys && entry.whys.length) {
+    for (let i = entry.whys.length - 1; i >= 0; i--) {
+      if (entry.whys[i] && entry.whys[i].trim()) return entry.whys[i].trim();
+    }
+  }
+  return entry.text;
+}
+
+function startPhase5ForCurrent() {
+  const current = phase2Queue[masterIndex];
+  const choice = pathChoice[current.name] || {};
+  const vData = {};
+  const aData = {};
+
+  if (choice.whys) {
+    // 5 Whys was done: use causes marked rootChecked in whysData
+    const entries = whysData[current.name] || {};
+    Object.keys(entries).forEach(causeId => {
+      const entry = entries[causeId];
+      if (entry.rootChecked) {
+        const rootText = getDeepestWhy(entry);
+        vData[causeId] = { text: rootText, evidence: '', checks: Array(5).fill(null), questions: [...DEFAULT_VALIDATION_QUESTIONS], validated: 'pending' };
+        aData[causeId] = { text: rootText, action: '', impact: 'medium', effort: 'medium' };
+      }
+    });
+  } else if (choice.ishikawa) {
+    // Ishikawa only: collect all level-3 (root cause) nodes from ishikawaData
+    const data = ishikawaData[current.name] || {};
+    const config = getBoneConfig(current.name);
+    let idCounter = 0;
+
+    function collectLevel3(nodes, level) {
+      nodes.forEach(node => {
+        if (level === 3 && node.text && node.text.trim()) {
+          const key = String(node.id);
+          vData[key] = { text: node.text, evidence: '', checks: Array(5).fill(null), questions: [...DEFAULT_VALIDATION_QUESTIONS], validated: 'pending' };
+          aData[key] = { text: node.text, action: '', impact: 'medium', effort: 'medium' };
+        }
+        if (node.subcauses && level < 3) collectLevel3(node.subcauses, level + 1);
+      });
+    }
+
+    config.filter(c => c.enabled).forEach(cat => {
+      collectLevel3(data[cat.id] || [], 1);
+    });
+    collectLevel3(data.unsorted || [], 1);
+  }
+
+  validationData[current.name] = vData;
+  actionData[current.name] = aData;
+
+  phase5Index = masterIndex;
+  phase5Card.style.display = 'block';
+  renderPhase5();
+  phase5Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderPhase5Progress() {
+  phase5Progress.innerHTML = '';
+  phase2Queue.forEach((d, i) => {
+    const span = document.createElement('span');
+    span.className = 'progress-step';
+    if (i < masterIndex) span.classList.add('done');
+    else if (i === masterIndex) span.classList.add('current');
+    span.textContent = `${i + 1}. ${d.name}`;
+    phase5Progress.appendChild(span);
+  });
+}
+
+function renderPhase5() {
+  phase5ContinueBtn.textContent = (masterIndex === phase2Queue.length - 1) ? 'Finish →' : 'Continue to next defect →';
+
+  const current = phase2Queue[masterIndex];
+  phase5Context.innerHTML = `Working on defect <strong>${escapeXml(current.name)}</strong>.`;
+
+  renderValidationTable(current);
+  renderActionTable(current);
+  renderPhase5Progress();
+}
+
+const DEFAULT_VALIDATION_QUESTIONS = [
+  'Do you have data or records that confirm this cause actually occurs?',
+  'Would the defect disappear (or decrease significantly) if this cause were corrected?',
+  'Is correcting this cause within the organization\'s control?',
+  'Is this a true root cause, not just a symptom of something deeper?',
+  'Could this cause alone explain the defect being analyzed?',
+];
+
+function getVerdict(checks) {
+  if (!checks || checks.length === 0) return { cls: 'v-pending', icon: '—', text: 'Not yet evaluated' };
+  const answered = checks.filter(c => c !== null);
+  if (answered.length === 0) return { cls: 'v-pending', icon: '—', text: 'Not yet evaluated' };
+  const yesCount = checks.filter(c => c === true).length;
+  const total = checks.length;
+  const threshold = Math.ceil(total * 0.7); // 70% yes = validated
+  if (yesCount >= threshold) return { cls: 'v-validated', icon: '✅', text: `Validated (${yesCount}/${total} criteria met)` };
+  if (yesCount >= Math.ceil(total * 0.4)) return { cls: 'v-partial', icon: '⚠️', text: `Partially validated (${yesCount}/${total} criteria met) — review the "No" answers` };
+  return { cls: 'v-invalid', icon: '❌', text: `Not validated (${yesCount}/${total} criteria met) — this may not be the true root cause` };
+}
+
+function renderValidationTable(current) {
+  const vData = validationData[current.name] || {};
+  const causeIds = Object.keys(vData);
+
+  if (causeIds.length === 0) {
+    const choice = pathChoice[current.name] || {};
+    const hint = choice.whys
+      ? 'No candidate root causes were marked in the 5 Whys. Go back and check the deepest "Why?" for at least one cause.'
+      : 'No level-3 root causes were found in the Ishikawa diagram. Go back and add at least one "L3 · Root cause" under a sub-cause.';
+    phase5ValidationWrap.innerHTML = `<div class="empty-state">${hint}</div>`;
+    return;
+  }
+
+  phase5ValidationWrap.innerHTML = '';
+
+  causeIds.forEach(causeId => {
+    const v = vData[causeId];
+    if (!v.checks) v.checks = [null,null,null,null,null];
+    const rootText = v.text || causeId;
+
+    const card = document.createElement('div');
+    card.className = 'val-cause-card';
+
+    // Title
+    const title = document.createElement('div');
+    title.className = 'val-cause-title';
+    title.textContent = rootText;
+    card.appendChild(title);
+
+    const path = document.createElement('div');
+    path.className = 'val-cause-path';
+    path.textContent = 'Candidate root cause — validate by answering the questions below';
+    card.appendChild(path);
+
+    const verdictEl = document.createElement('div');
+    verdictEl.className = 'val-verdict v-pending';
+
+    function updateVerdict() {
+      const verd = getVerdict(v.checks);
+      verdictEl.className = `val-verdict ${verd.cls}`;
+      verdictEl.innerHTML = `<span>${verd.icon}</span><span>${verd.text}</span>`;
+      v.validated = verd.cls === 'v-validated' ? 'yes' : (verd.cls === 'v-invalid' ? 'no' : 'pending');
+    }
+
+    // Ensure questions/checks arrays exist and are in sync
+    if (!v.questions) v.questions = [...DEFAULT_VALIDATION_QUESTIONS];
+    if (!v.checks || v.checks.length !== v.questions.length) {
+      const old = v.checks || [];
+      v.checks = v.questions.map((_, i) => old[i] ?? null);
+    }
+
+    const checklist = document.createElement('div');
+    checklist.className = 'val-checklist';
+
+    function rebuildChecklist() {
+      checklist.innerHTML = '';
+      // Sync checks length with questions
+      v.checks = v.questions.map((_, i) => v.checks[i] ?? null);
+
+      v.questions.forEach((question, qi) => {
+        const item = document.createElement('div');
+        item.className = 'val-check-item';
+        item.style.alignItems = 'flex-start';
+
+        // Editable question text
+        const qWrap = document.createElement('div');
+        qWrap.className = 'check-question';
+        qWrap.style.flex = '1';
+
+        const qNum = document.createElement('strong');
+        qNum.textContent = `${qi + 1}. `;
+        qNum.style.flexShrink = '0';
+
+        const qInput = document.createElement('input');
+        qInput.type = 'text';
+        qInput.value = question;
+        qInput.style.cssText = 'border:none;background:transparent;width:calc(100% - 24px);font-size:13px;color:var(--ink);outline:none;border-bottom:1px dashed var(--line);padding:1px 0;';
+        qInput.addEventListener('input', e => { v.questions[qi] = e.target.value; });
+
+        const removeQBtn = document.createElement('button');
+        removeQBtn.className = 'btn-remove';
+        removeQBtn.title = 'Remove this question';
+        removeQBtn.textContent = '✕';
+        removeQBtn.style.marginLeft = '4px';
+        removeQBtn.addEventListener('click', () => {
+          v.questions.splice(qi, 1);
+          v.checks.splice(qi, 1);
+          rebuildChecklist();
+          updateVerdict();
+        });
+
+        qWrap.appendChild(qNum);
+        qWrap.appendChild(qInput);
+        qWrap.appendChild(removeQBtn);
+
+        const btns = document.createElement('div');
+        btns.className = 'check-btns';
+
+        const yesBtn = document.createElement('button');
+        yesBtn.className = 'check-btn' + (v.checks[qi] === true ? ' active-yes' : '');
+        yesBtn.textContent = 'Yes';
+
+        const noBtn = document.createElement('button');
+        noBtn.className = 'check-btn' + (v.checks[qi] === false ? ' active-no' : '');
+        noBtn.textContent = 'No';
+
+        yesBtn.addEventListener('click', () => {
+          v.checks[qi] = true;
+          yesBtn.className = 'check-btn active-yes';
+          noBtn.className = 'check-btn';
+          updateVerdict();
+        });
+        noBtn.addEventListener('click', () => {
+          v.checks[qi] = false;
+          noBtn.className = 'check-btn active-no';
+          yesBtn.className = 'check-btn';
+          updateVerdict();
+        });
+
+        btns.appendChild(yesBtn);
+        btns.appendChild(noBtn);
+        item.appendChild(qWrap);
+        item.appendChild(btns);
+        checklist.appendChild(item);
+      });
+
+      // Add question button
+      const addQBtn = document.createElement('button');
+      addQBtn.className = 'add-cause-mini';
+      addQBtn.style.marginTop = '8px';
+      addQBtn.textContent = '+ Add validation question';
+      addQBtn.addEventListener('click', () => {
+        v.questions.push('');
+        v.checks.push(null);
+        rebuildChecklist();
+        // Focus the new input
+        const inputs = checklist.querySelectorAll('input[type="text"]');
+        if (inputs.length) inputs[inputs.length - 1].focus();
+      });
+      checklist.appendChild(addQBtn);
+    }
+
+    rebuildChecklist();
+    card.appendChild(checklist);
+
+    // Evidence textarea
+    const evWrap = document.createElement('div');
+    evWrap.className = 'val-evidence';
+    const evLabel = document.createElement('label');
+    evLabel.textContent = 'Supporting evidence / data source';
+    const evTextarea = document.createElement('textarea');
+    evTextarea.placeholder = 'e.g. Maintenance log shows 80% of failures occurred after 800 cycles on machines without recent service.';
+    evTextarea.value = v.evidence || '';
+    evTextarea.addEventListener('input', e => { v.evidence = e.target.value; });
+    evWrap.appendChild(evLabel);
+    evWrap.appendChild(evTextarea);
+    card.appendChild(evWrap);
+
+    // Verdict
+    updateVerdict();
+    card.appendChild(verdictEl);
+
+    phase5ValidationWrap.appendChild(card);
+  });
+}
+
+function renderActionTable(current) {
+  const aData = actionData[current.name] || {};
+  const causeIds = Object.keys(aData);
+
+  if (causeIds.length === 0) {
+    phase5ActionTableWrap.innerHTML = '<div class="empty-state">No candidate root causes to plan actions for.</div>';
+    phase5QuadrantGrid.innerHTML = '';
+    return;
+  }
+
+  let html = `<table class="action-table">
+    <thead>
+      <tr>
+        <th>Root cause</th>
+        <th>Proposed corrective action</th>
+        <th style="width:130px;">Impact</th>
+        <th style="width:130px;">Effort</th>
+        <th style="width:110px;">Category</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  causeIds.forEach(causeId => {
+    const a = aData[causeId];
+    const rootText = a.text || causeId;
+    const tag = getQuadrantTag(a.impact, a.effort);
+
+    html += `<tr data-cause-id="${causeId}">
+      <td class="root-cause-cell">${escapeXml(rootText)}</td>
+      <td><input type="text" data-field="action" value="${escapeXml(a.action)}" placeholder="e.g. Replace cutting tool every 800 cycles"></td>
+      <td>
+        <select data-field="impact">
+          <option value="low" ${a.impact === 'low' ? 'selected' : ''}>Low</option>
+          <option value="medium" ${a.impact === 'medium' ? 'selected' : ''}>Medium</option>
+          <option value="high" ${a.impact === 'high' ? 'selected' : ''}>High</option>
+        </select>
+      </td>
+      <td>
+        <select data-field="effort">
+          <option value="low" ${a.effort === 'low' ? 'selected' : ''}>Low</option>
+          <option value="medium" ${a.effort === 'medium' ? 'selected' : ''}>Medium</option>
+          <option value="high" ${a.effort === 'high' ? 'selected' : ''}>High</option>
+        </select>
+      </td>
+      <td><span class="tag-cell">${tag}</span></td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  phase5ActionTableWrap.innerHTML = html;
+
+  // wire events
+  phase5ActionTableWrap.querySelectorAll('tr[data-cause-id]').forEach(row => {
+    const causeId = row.dataset.causeId;
+    const a = aData[causeId];
+
+    row.querySelector('[data-field="action"]').addEventListener('input', e => {
+      a.action = e.target.value;
+    });
+    row.querySelector('[data-field="impact"]').addEventListener('change', e => {
+      a.impact = e.target.value;
+      renderActionTable(current);
+      renderQuadrantGrid(current);
+    });
+    row.querySelector('[data-field="effort"]').addEventListener('change', e => {
+      a.effort = e.target.value;
+      renderActionTable(current);
+      renderQuadrantGrid(current);
+    });
+  });
+
+  renderQuadrantGrid(current);
+}
+
+// Map impact/effort to a quadrant label + tag HTML
+function getQuadrant(impact, effort) {
+  const highImpact = (impact === 'high');
+  const lowEffort = (effort === 'low');
+
+  if (highImpact && lowEffort) return 'quickwin';
+  if (highImpact && !lowEffort) return 'major';
+  if (!highImpact && lowEffort) return 'fillin';
+  return 'thankless';
+}
+
+function getQuadrantTag(impact, effort) {
+  const q = getQuadrant(impact, effort);
+  const tags = {
+    quickwin: '<span class="quick-win-tag">⚡ Quick Win</span>',
+    major: '<span class="major-tag">🚀 Major Project</span>',
+    fillin: '<span class="fillin-tag">🧩 Fill-in</span>',
+    thankless: '<span class="thankless-tag">⚠️ Thankless Task</span>',
+  };
+  return tags[q];
+}
+
+function renderQuadrantGrid(current) {
+  const aData = actionData[current.name] || {};
+  const causeIds = Object.keys(aData);
+
+  const groups = { quickwin: [], major: [], fillin: [], thankless: [] };
+  causeIds.forEach(causeId => {
+    const a = aData[causeId];
+    const q = getQuadrant(a.impact, a.effort);
+    const label = a.action.trim() !== '' ? a.action : (a.text || causeId);
+    groups[q].push(label);
+  });
+
+  // Execution order: Quick Wins first, then Fill-ins, then Major Projects, Thankless last
+  const ORDER = [
+    { key: 'quickwin',  step: 1, title: '⚡ Quick Wins',         sub: 'High impact · Low effort',   cssClass: 'q-quickwin' },
+    { key: 'fillin',    step: 2, title: '🧩 Fill-ins',           sub: 'Low impact · Low effort',    cssClass: 'q-fillin'  },
+    { key: 'major',     step: 3, title: '🚀 Major Projects',     sub: 'High impact · High effort',  cssClass: 'q-major'   },
+    { key: 'thankless', step: 4, title: '⚠️ Thankless Tasks',    sub: 'Low impact · High effort',   cssClass: 'q-thankless'},
+  ];
+
+  function renderGroup({ key, step, title, sub, cssClass }) {
+    const items = groups[key];
+    const list = items.length > 0
+      ? `<ul>${items.map((i, idx) => `<li>${escapeXml(i)}</li>`).join('')}</ul>`
+      : '<div style="color:var(--muted);font-style:italic;font-size:12px;">No actions here</div>';
+    return `<div class="quadrant-cell ${cssClass}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="background:#2b2622;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${step}</span>
+        <h5 style="margin:0;">${title}</h5>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${sub}</div>
+      ${list}
+    </div>`;
+  }
+
+  const orderNote = `<p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+    <strong>Recommended execution order:</strong>
+    <span style="margin:0 6px;">① Quick Wins</span>→
+    <span style="margin:0 6px;">② Fill-ins</span>→
+    <span style="margin:0 6px;">③ Major Projects</span>→
+    <span style="margin:0 6px;">④ Thankless Tasks (reconsider or defer)</span>
+  </p>`;
+
+  phase5QuadrantGrid.innerHTML = orderNote + `<div class="quadrant-grid-4">${ORDER.map(renderGroup).join('')}</div>`;
+}
+
+phase5ContinueBtn.addEventListener('click', () => {
+  phase5Card.style.display = 'none';
+  masterIndex++;
+  startDefectCycle();
+});
+
+// ============================================================
+// ============================================================
+// 5 WHYS DIAGRAM
+// ============================================================
+function renderWhysDiagram(current) {
+  const entries = whysData[current.name] || {};
+  const causeIds = Object.keys(entries);
+
+  if (causeIds.length === 0) {
+    whysDiagramWrap.innerHTML = '<div class="empty-state">No 5 Whys data yet. Fill in at least one cause chain above.</div>';
+    return;
+  }
+
+  const BOX_W = 150, BOX_H = 52, BOX_R = 7;
+  const ARROW_W = 36, GAP = 8;
+  const ROW_H = BOX_H + 28;
+  const STEP_W = BOX_W + ARROW_W;
+  const PADDING = 20;
+
+  const catLookup = {};
+  getBoneConfig(current.name).forEach(c => catLookup[c.id] = c);
+  catLookup['unsorted'] = { label: 'Unsorted', color: '#9ca3af' };
+
+  const rows = causeIds
+    .map(id => entries[id])
+    .filter(e => e && e.text && (e.whys || []).some(w => w && w.trim()));
+
+  if (rows.length === 0) {
+    whysDiagramWrap.innerHTML = '<div class="empty-state">Fill in at least one "Why?" answer to generate the diagram.</div>';
+    return;
+  }
+
+  // Dynamic width: find the longest chain across all rows
+  const MAX_STEPS = Math.max(7, ...rows.map(e => {
+    const filled = (e.whys || []).filter(w => w && w.trim()).length;
+    return filled + 1; // +1 for the cause itself
+  }));
+
+  const W = PADDING * 2 + MAX_STEPS * STEP_W - ARROW_W;
+  const H = PADDING * 2 + rows.length * ROW_H;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Sans, sans-serif">`;
+  svg += `<rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"/>`;
+
+  rows.forEach((entry, ri) => {
+    const y0 = PADDING + ri * ROW_H;
+    const filledWhys = (entry.whys || []).map((w, i) => ({ text: w, idx: i })).filter(w => w.text && w.text.trim());
+    const chain = [
+      { text: entry.text, type: 'cause' },
+      ...filledWhys.map((w, si) => ({
+        text: w.text,
+        type: si === filledWhys.length - 1 ? 'root' : 'why',
+        label: `Why ${w.idx + 1}`
+      }))
+    ];
+
+    const cat = catLookup[entry.category] || catLookup['unsorted'];
+
+    chain.forEach((node, ci) => {
+      const x0 = PADDING + ci * STEP_W;
+
+      const fill = node.type === 'cause' ? '#dbe9f1'
+        : node.type === 'root' ? '#f8e1e1'
+        : (ci % 2 === 0 ? '#faf6f0' : '#f5f0ec');
+      const stroke = node.type === 'cause' ? '#3b6e8f'
+        : node.type === 'root' ? '#bf4040'
+        : '#c8bfb5';
+      const textColor = node.type === 'cause' ? '#1e4a6b'
+        : node.type === 'root' ? '#7a2c2c'
+        : '#3a332d';
+      const fontWeight = (node.type === 'cause' || node.type === 'root') ? '700' : '400';
+
+      // Box
+      svg += `<rect x="${x0}" y="${y0}" width="${BOX_W}" height="${BOX_H}" rx="${BOX_R}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`;
+
+      // Small label above box (Why 1, Why 2, etc.) — skip on root node to avoid collision
+      if (node.label && node.type !== 'root') {
+        svg += `<text x="${x0 + BOX_W / 2}" y="${y0 - 5}" text-anchor="middle" font-size="9" fill="#9ca3af" font-weight="600">${escapeXml(node.label)}</text>`;
+      }
+      if (node.type === 'root') {
+        svg += `<text x="${x0 + BOX_W / 2}" y="${y0 - 5}" text-anchor="middle" font-size="9" fill="#bf4040" font-weight="700">ROOT CAUSE</text>`;
+      }
+
+      // Text inside box (wrapped)
+      const lines = wrapLabel(node.text, 18);
+      lines.forEach((line, li) => {
+        const ty = y0 + BOX_H / 2 + (li - (lines.length - 1) / 2) * 13;
+        svg += `<text x="${x0 + BOX_W / 2}" y="${ty + 4}" text-anchor="middle" font-size="11" font-weight="${fontWeight}" fill="${textColor}">${escapeXml(line)}</text>`;
+      });
+
+      // Arrow to next box
+      if (ci < chain.length - 1) {
+        const ax = x0 + BOX_W + 4;
+        const ay = y0 + BOX_H / 2;
+        const ax2 = ax + ARROW_W - 10;
+        svg += `<line x1="${ax}" y1="${ay}" x2="${ax2}" y2="${ay}" stroke="#9ca3af" stroke-width="1.5"/>`;
+        svg += `<polygon points="${ax2 + 8},${ay} ${ax2},${ay - 5} ${ax2},${ay + 5}" fill="#9ca3af"/>`;
+      }
+    });
+
+    // Category label on the left
+    // Category shown inside the cause box via color only (no left label)
+  });
+
+  // Defect label at top
+  const defectLabel = wrapLabel(current.name, 60);
+  defectLabel.forEach((line, li) => {
+    svg += `<text x="${PADDING}" y="${12 + li * 14}" font-size="11" font-weight="700" fill="#2b2622">${escapeXml(line)}</text>`;
+  });
+
+  svg += `</svg>`;
+  whysDiagramWrap.innerHTML = svg;
+}
+
+showWhysDiagramBtn.addEventListener('click', () => {
+  const current = phase2Queue[masterIndex];
+  if (!current) return;
+  const isVisible = whysDiagramWrap.style.display !== 'none';
+  if (isVisible) {
+    whysDiagramWrap.style.display = 'none';
+    downloadWhysDiagramBtn.style.display = 'none';
+    showWhysDiagramBtn.textContent = '📊 View 5 Whys diagram';
+  } else {
+    renderWhysDiagram(current);
+    whysDiagramWrap.style.display = 'block';
+    downloadWhysDiagramBtn.style.display = '';
+    showWhysDiagramBtn.textContent = '📊 Hide diagram';
+  }
+});
+
+downloadWhysDiagramBtn.addEventListener('click', () => {
+  const svgEl = whysDiagramWrap.querySelector('svg');
+  const current = phase2Queue[masterIndex];
+  const safeName = current ? current.name.replace(/[^a-z0-9]/gi,'_').toLowerCase() : '5whys';
+  downloadSvgAsPng(svgEl, `5whys_${safeName}.png`);
+});
+
+// Also re-render the diagram when the student collapses/re-opens
+// (re-render each time "view" is pressed to pick up latest why data)
+
+// ============================================================
+// FINAL SUMMARY
+// ============================================================
+function renderFinalSummary() {
+  if (!finalSummaryContent) return;
+  finalSummaryContent.innerHTML = '';
+
+  // ---- 1. Pareto ----
+  const pareto = window.__currentPareto || [];
+  if (pareto.length > 0) {
+    const sec = summarySection('📊 Step 1 · Pareto Analysis', 'Which defects matter most?');
+    const total = pareto.reduce((s,d) => s + d.freq, 0);
+    const tbody = pareto.map(d =>
+      `<tr${d.vital ? ' style="background:var(--terracotta-light);font-weight:600;"' : ''}>
+        <td>${escapeXml(d.name)}</td>
+        <td style="text-align:right;">${d.freq}</td>
+        <td style="text-align:right;">${d.pct.toFixed(1)}%</td>
+        <td style="text-align:right;">${d.cumPct.toFixed(1)}%</td>
+      </tr>`
+    ).join('');
+    sec.innerHTML += `<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;">
+      <thead><tr style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">
+        <th style="text-align:left;padding:4px 6px;border-bottom:2px solid var(--line);">Defect</th>
+        <th style="text-align:right;padding:4px 6px;border-bottom:2px solid var(--line);">Freq.</th>
+        <th style="text-align:right;padding:4px 6px;border-bottom:2px solid var(--line);">%</th>
+        <th style="text-align:right;padding:4px 6px;border-bottom:2px solid var(--line);">Cum. %</th>
+      </tr></thead><tbody>${tbody}</tbody></table>
+    <p style="font-size:12px;color:var(--muted);margin-top:6px;">Highlighted rows = "vital few" (≈80% of defects). Total: ${total} occurrences.</p>`;
+    finalSummaryContent.appendChild(sec);
+  }
+
+  // ---- 2-6. Per-defect sections ----
+  phase2Queue.forEach(defect => {
+    const defSec = summarySection(`🐟 Defect: ${defect.name}`,
+      `${defect.freq} occurrences · ${defect.pct.toFixed(1)}% of total · cum. ${defect.cumPct.toFixed(1)}%`);
+    defSec.style.borderLeft = '4px solid var(--terracotta)';
+
+    // Affinity
+    const affResult = phase2Results[defect.name];
+    if (affResult) {
+      const cats = getBoneConfig(defect.name);
+      const catMap = {};
+      cats.forEach(c => { catMap[c.id] = []; });
+      catMap['unsorted'] = [];
+      affResult.causes.forEach(c => {
+        const cat = affResult.assignments[c.id] || 'unsorted';
+        if (catMap[cat]) catMap[cat].push(c.text);
+      });
+      const catLabels = [...cats, {id:'unsorted', label:'Unsorted', color:'#9ca3af'}];
+      const affHTML = catLabels.map(cat => {
+        const items = catMap[cat.id] || [];
+        if (!items.length) return '';
+        return `<div style="margin-bottom:6px;"><span style="font-size:11px;font-weight:700;color:${cat.color};text-transform:uppercase;letter-spacing:.04em;">${escapeXml(cat.label)}</span>: ${items.map(t => `<em>${escapeXml(t)}</em>`).join(', ')}</div>`;
+      }).join('');
+      const affDiv = summarySubsection('Step 2 · Affinity Groups', affHTML);
+      defSec.appendChild(affDiv);
+    }
+
+    // Ishikawa root causes
+    const ishData = ishikawaData[defect.name];
+    if (ishData) {
+      const roots = [];
+      const cfg = getBoneConfig(defect.name);
+      function findRoots(nodes, path) {
+        nodes.forEach(n => {
+          if (n.subcauses && n.subcauses.length) findRoots(n.subcauses, path ? `${path} → ${n.text}` : n.text);
+          else if (n.text && n.text.trim()) roots.push({ text: n.text, path: path ? `${path} → ${n.text}` : n.text });
+        });
+      }
+      cfg.filter(c => c.enabled).forEach(cat => findRoots(ishData[cat.id]||[], ''));
+      if (roots.length) {
+        const rootHTML = roots.map(r => `<div style="margin-bottom:4px;"><span style="color:#bf4040;font-weight:700;">★</span> ${escapeXml(r.path)}</div>`).join('');
+        defSec.appendChild(summarySubsection('Step 3 · Ishikawa Root Causes (L3)', rootHTML));
+      }
+    }
+
+    // 5 Whys
+    const whys = whysData[defect.name];
+    if (whys && Object.keys(whys).length) {
+      const whysHTML = Object.values(whys).map(entry => {
+        const chain = [entry.text, ...entry.whys.filter(w => w && w.trim())];
+        return `<div style="margin-bottom:8px;font-size:12px;">${chain.map((t,i) =>
+          `<span style="${i===chain.length-1 ? 'color:#bf4040;font-weight:700;' : ''}">${i===0?'<strong>':''}`+
+          `${escapeXml(t)}${i===0?'</strong>':''}</span>`
+        ).join(' <span style="color:var(--muted)">→</span> ')}</div>`;
+      }).join('');
+      defSec.appendChild(summarySubsection('Step 4 · 5 Whys Chains', whysHTML));
+    }
+
+    // Validation
+    const vData = validationData[defect.name];
+    if (vData && Object.keys(vData).length) {
+      const vHTML = Object.values(vData).map(v => {
+        const verd = getVerdict(v.checks || []);
+        return `<div style="margin-bottom:6px;font-size:12px;">
+          <strong>${escapeXml(v.text||'')}</strong><br>
+          <span style="font-size:11px;">${verd.icon} ${verd.text}</span>
+          ${v.evidence ? `<br><span style="color:var(--muted);font-size:11px;">Evidence: ${escapeXml(v.evidence)}</span>` : ''}
+        </div>`;
+      }).join('');
+      defSec.appendChild(summarySubsection('Step 5 · Validation', vHTML));
+    }
+
+    // Action plan
+    const aData = actionData[defect.name];
+    if (aData && Object.keys(aData).length) {
+      const aHTML = Object.values(aData).map(a => {
+        const q = getQuadrant(a.impact, a.effort);
+        const icons = {quickwin:'⚡',major:'🚀',fillin:'🧩',thankless:'⚠️'};
+        const labels = {quickwin:'Quick Win',major:'Major Project',fillin:'Fill-in',thankless:'Thankless Task'};
+        return `<div style="margin-bottom:6px;font-size:12px;">
+          <strong>${escapeXml(a.text||'')}</strong><br>
+          ${a.action ? `<span style="color:var(--ink);">→ ${escapeXml(a.action)}</span><br>` : ''}
+          <span style="font-size:11px;">${icons[q]} ${labels[q]} · Impact: ${a.impact} · Effort: ${a.effort}</span>
+        </div>`;
+      }).join('');
+      defSec.appendChild(summarySubsection('Step 6 · Action Plan', aHTML));
+    }
+
+    finalSummaryContent.appendChild(defSec);
+  });
+}
+
+function summarySection(title, subtitle) {
+  const el = document.createElement('div');
+  el.style.cssText = 'background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin-bottom:16px;';
+  el.innerHTML = `<div style="font-size:15px;font-weight:700;margin-bottom:2px;">${escapeXml(title)}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${escapeXml(subtitle)}</div>`;
+  return el;
+}
+
+function summarySubsection(title, html) {
+  const el = document.createElement('div');
+  el.style.cssText = 'background:var(--cream);border-radius:8px;padding:10px 12px;margin-top:10px;';
+  el.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">${escapeXml(title)}</div>${html}`;
+  return el;
+}
+
+downloadSummaryBtn.addEventListener('click', () => {
+  // Build an HTML string of the summary for printing/saving
+  const content = finalSummaryContent ? finalSummaryContent.innerHTML : '';
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Improvement Cycle Summary</title>
+    <style>
+      body{font-family:'Arial',sans-serif;max-width:900px;margin:40px auto;color:#2b2622;line-height:1.5;}
+      h1{font-size:22px;margin-bottom:4px;}
+      .subtitle{color:#7a7068;font-size:14px;margin-bottom:24px;}
+      .section{border:1px solid #e6ddd2;border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+      .section-title{font-size:15px;font-weight:700;margin-bottom:2px;}
+      .section-sub{font-size:12px;color:#7a7068;margin-bottom:10px;}
+      .subsec{background:#faf6f0;border-radius:6px;padding:10px 12px;margin-top:10px;}
+      .subsec-title{font-size:11px;font-weight:700;color:#7a7068;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+      table{width:100%;border-collapse:collapse;font-size:13px;}
+      th{text-align:left;padding:4px 6px;border-bottom:2px solid #e6ddd2;font-size:11px;color:#7a7068;text-transform:uppercase;}
+      td{padding:4px 6px;border-bottom:1px solid #e6ddd2;}
+    </style></head><body>
+    <h1>A Continuous Improvement Simulator</h1>
+    <div class="subtitle">From Data to Root Cause · Professor: Merssy Luisa Quispe Velásquez · Universidad de Lima</div>
+    ${content}
+    </body></html>`;
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const link = document.createElement('a');
+  link.download = 'improvement_summary.html';
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+});
+
+</script>
+</body>
+</html>
+
